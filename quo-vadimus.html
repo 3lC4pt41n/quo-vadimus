@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quo Vadimus — Wirksystem-Karte</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --ink:#e8eaed; --muted:#9aa0aa; --line:#2a2f3a;
+    --belegt:#3ea66b; --plausibel:#d49a2a; --umstritten:#9b6bd6; --spekulativ:#c0564f;
+    --start:#4a90d9; --conv:#3ea66b; --tip:#e0b341; --locked:#6b7280; --outcome:#cdd2da;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  header{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  header h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.2px}
+  header .sub{color:var(--muted);font-size:12.5px}
+  #wrap{display:flex;height:calc(100% - 53px)}
+  #stage{flex:1;position:relative;overflow:hidden;cursor:grab}
+  #stage.drag{cursor:grabbing}
+  svg{width:100%;height:100%;display:block;user-select:none}
+  .nodeBox{cursor:pointer}
+  .nodeBox rect{transition:filter .15s, stroke-width .15s}
+  .nodeBox:hover rect{filter:brightness(1.18)}
+  .nlabel{font-size:11.5px;line-height:1.18;color:var(--ink);padding:6px 8px;
+    height:100%;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:550;overflow:hidden}
+  .badge{font-size:11px;font-weight:700}
+  .edge{fill:none;stroke-width:2}
+  .ehit{fill:none;stroke:transparent;stroke-width:16;cursor:pointer}
+  .elabel{font-size:9.5px;fill:var(--muted)}
+  #side{width:330px;border-left:1px solid var(--line);background:var(--panel);
+    padding:16px 18px;overflow-y:auto;font-size:13px}
+  #side h2{font-size:13px;margin:0 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:650}
+  #side .title{font-size:16px;font-weight:650;margin:2px 0 10px}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;margin:0 6px 6px 0}
+  .row{padding:10px 0;border-top:1px solid var(--line)}
+  .row .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+  .mech{font-style:italic}
+  .legend{position:absolute;left:14px;bottom:14px;background:rgba(23,26,33,.92);
+    border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--muted);max-width:230px}
+  .legend b{color:var(--ink);font-weight:600}
+  .legend .li{display:flex;align-items:center;gap:7px;margin:3px 0}
+  .sw{width:22px;height:0;border-top-width:3px;border-top-style:solid;display:inline-block}
+  .empty{color:var(--muted);font-style:italic;margin-top:8px}
+  .hint{color:var(--muted);font-size:11px;margin-top:14px;line-height:1.5}
+  kbd{background:#222732;border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:10.5px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Quo Vadimus</h1>
+  <span class="sub">Wirksystem-Karte · „Wohin gehen wir." — klick auf Knoten oder Kante für den Mechanismus</span>
+</header>
+<div id="wrap">
+  <div id="stage">
+    <svg id="svg"></svg>
+    <div class="legend">
+      <div style="margin-bottom:6px"><b>Konfidenz (Kantenfarbe)</b></div>
+      <div class="li"><span class="sw" style="border-color:var(--belegt)"></span> belegt</div>
+      <div class="li"><span class="sw" style="border-color:var(--plausibel)"></span> plausibel</div>
+      <div class="li"><span class="sw" style="border-color:var(--umstritten)"></span> umstritten</div>
+      <div style="margin:8px 0 4px"><b>Wirkung (Linienart)</b></div>
+      <div class="li"><span class="sw" style="border-color:var(--muted)"></span> verstärkend</div>
+      <div class="li"><span class="sw" style="border-color:var(--muted);border-top-style:dashed"></span> dämpfend / verriegelt</div>
+      <div class="li"><span class="sw" style="border-color:var(--muted);border-top-style:dotted"></span> Rückkopplung</div>
+      <div style="margin:8px 0 4px"><b>Knoten</b></div>
+      <div class="li">◇ Verzweigung · ◎ Konvergenz · ★ Kipp-Variable · 🔒 verriegelt</div>
+    </div>
+  </div>
+  <div id="side">
+    <h2>Detail</h2>
+    <div id="detail"><div class="empty">Nichts ausgewählt. Klick einen Knoten oder eine Kante.</div>
+      <div class="hint">Ziehen = verschieben · <kbd>Scroll</kbd> = zoomen.<br>
+      Diese Datei ist datengetrieben — neue Ketten = ein paar Zeilen im <code>NODES</code>/<code>EDGES</code>-Objekt unten im Quelltext.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====================================================================
+//  WIRKSYSTEM-DATEN  —  hier wächst die Karte. Neue Kette = neue Knoten + Kanten.
+//  type: start | branch | convergence | outcome | tipping | locked | bright
+//  conf: belegt | plausibel | umstritten | spekulativ
+//  effect: verstaerkend | daempfend | loop
+// ====================================================================
+const NODES = {
+  A:  {x:470,y:30,  type:"start",       label:"KI-Fähigkeit bei kognitiver Routinearbeit steigt schnell", chain:1, note:"Startbedingung von Kette 1."},
+  B:  {x:470,y:150, type:"branch",      label:"Viele Mid-Level-/Office-Jobs werden obsolet", chain:1, note:"Verzweigung: verschwinden Jobs netto, oder verschieben sie sich nur?"},
+  Bs: {x:215,y:280, type:"outcome",     label:"Verschiebung in den Service-Sektor", chain:1},
+  Bm: {x:470,y:280, type:"outcome",     label:"Verschiebung ins Monitoring der KI-Systeme", chain:1},
+  Bw: {x:730,y:280, type:"outcome",     label:"Netto-Wegfall von Stellen", chain:1},
+  Au: {x:840,y:410, type:"bright",      label:"Aufwertung: knappe, gut bezahlte Aufsichtsrollen", chain:1, note:"Heller Gegenpfad — aber nur für wenige."},
+  C:  {x:470,y:410, type:"convergence", label:"Präkarisierung vieler Arbeiter", chain:1, note:"Konvergenzknoten: Service- und Wegfall-Pfad laufen hier zusammen; zugleich Verzweigung (D vs. D')."},
+  Dp: {x:730,y:540, type:"locked",      label:"Umverteilung durch die Mitte → Stabilisierung", chain:1, note:"VERRIEGELT: Umverteilung gilt als Wettbewerbsfähigkeits-Killer (umstritten). Der helle Ausweg ist teuer/selbstschädigend."},
+  D:  {x:470,y:540, type:"outcome",     label:"Radikalisierung der Ränder (links & rechts)", chain:1, note:"Dieselbe Präkarisierung, zwei Deutungen: „die da oben/das Kapital“ (links) vs. „Migranten/Eliten/Brüssel“ (rechts)."},
+  E:  {x:470,y:680, type:"outcome",     label:"Renationalisierung — Abkehr von Europa", chain:1, note:"Anti-supranationale Stoßrichtung ist Programmkern der Rechtsparteien (AfD, RN, FdI, PVV …) — Konvergenz über viele Akteure."},
+  T1: {x:30, y:410, type:"tipping",     label:"★ Kipp: Anteil Aufwertung vs. Service/Wegfall", chain:1, note:"Wenn Monitoring breit & gut entlohnt → Aufwertung. Wenn kleine Elite, Rest in den Service → Präkarisierung."},
+  T2: {x:30, y:560, type:"tipping",     label:"★ Kipp: Absicherung OHNE Wettbewerbsverlust möglich?", chain:1, note:"KI-Produktivität abschöpfen statt Arbeit besteuern? Reskilling? EU-Ebene? Findet sich ein Weg → Stabilisierung trotzdem möglich. → fällt mit T3 zu EINER Kipp-Variable zusammen."},
+
+  // ---- Kette 2: Steuersystem ----
+  S2:  {x:1180,y:30,  type:"start",       label:"Faktor-Fehlbepreisung: Arbeit hoch besteuert, Energie subventioniert, Ressourcen niedrig", chain:2, note:"Startbedingung von Kette 2 — unabhängig von Kette 1 (Steuerstruktur, nicht KI)."},
+  L:   {x:1180,y:165, type:"outcome",     label:"Arbeit wird teuer (hoher Steuerkeil)", chain:2},
+  J:   {x:1040,y:300, type:"outcome",     label:"Weniger Arbeitsplätze entstehen", chain:2, note:"Läuft in Kette 1s Konvergenzknoten C (Präkarisierung) — zweite unabhängige Kette, selber Attraktor."},
+  R:   {x:1320,y:300, type:"outcome",     label:"Ressourcenverschwendung — externe Kosten unbepreist", chain:2, note:"Offener Stecker für eine ökologische Kette 3."},
+  LK:  {x:1180,y:445, type:"convergence", label:"Standortwettbewerb verriegelt nationale Alleingänge", chain:2, note:"META-KONVERGENZ: derselbe Riegel, der in Kette 1 die Umverteilung blockiert. Zwei unabhängige Wege landen hier → robustester Attraktor des Systems."},
+  T3:  {x:1180,y:600, type:"tipping",     label:"★ Kipp: supranationale Koordination (EU/globaler Mindeststandard) — ja/nein?", chain:2, note:"Schalter des Gesamtsystems (= T2), aber DOWNSTREAM von SEC. Ja → Riegel öffnet, Reform & Absicherung möglich → Stabilisierung. Nein → nationales Gefangenendilemma. Kette 1s Renationalisierung (E) schaltet sie aktiv auf NEIN."},
+
+  // ---- Substrat: anthropologische Schicht ----
+  P:   {x:560, y:850, type:"premise",  label:"Mensch = Organismus, gedeiht zuerst selbst — moralischer Kreis in konzentrischen Ringen (Ich→Familie→Community→Land→Welt), nicht kantische Universalität", chain:0, note:"PRÄMISSE / Substrat (belegt: Singer, In-group-Präferenz). Kein Parallelknoten, sondern das Kraftfeld unter allen Ketten. Begründet zugleich C→D, E und warum T3 zu „Nein“ tendiert. Gegenkraft = kantischer Universal, aber konditional auf Sicherheit."},
+  SEC: {x:150, y:720, type:"tipping",  label:"★ Wahrgenommene Sicherheit / Überfluss → Radius des moralischen Kreises", chain:0, note:"Der tiefere Regler UNTER T3. Hoch → Kreis weit → Koordination möglich → Stabilisierung. Niedrig → Kreis eng → Abschottung → Attraktor. Echter Überfluss (z.B. „Energie fast gratis“) entwaffnet den Motor."},
+
+  // ---- Kette 3: Geopolitik ----
+  G:    {x:760, y:990,  type:"start",       label:"Rückkehr der Machtpolitik: Russland/Ukraine, „America first“, China/Taiwan, Aufrüstung, Musk/Mars", chain:3, note:"Startbedingung Kette 3 — unabhängig (Geopolitik)."},
+  BLOC: {x:340, y:1110, type:"bright",       label:"Äußere Bedrohung weitet den Kreis: „Europa als Block“ → Verteidigungsunion/Integration", chain:3, note:"Heller Gegen-Fork — derselbe wie bei D. Äußere Bedrohung kann den Kreis statt auf die Nation auf den Block weiten."},
+  ORD:  {x:640, y:1110, type:"convergence",  label:"Ordnung verschiebt sich: regelbasiert → machtbasiert", chain:3, note:"DREIFACHE FUNKTION: (1) macht T3 strukturell unmöglich → dritte Kette verriegelt den Master-Schalter; (2) = Prämisse P auf Staatsebene („first“-Politik); (3) öffnet die Systemfrage."},
+  RES:  {x:980, y:1110, type:"outcome",      label:"Ressourcen-Fehlallokation: Rüstung & Prestige statt nachhaltiger Entwicklung", chain:3, note:"Konvergiert mit der ökologischen Fehlbepreisung R aus Kette 2."},
+  SYS:  {x:640, y:1245, type:"branch",       label:"Systemfrage: Demokratie vs. Autokratie (Partei / König / Geld)", chain:3, note:"Verzweigung des Regimetyps. Machtbasierte Ordnung begünstigt strukturell die Autokratie."},
+
+  // ---- Kette 4: Verschuldung / Fiskalik ----
+  S4:  {x:-340, y:520, type:"start",   label:"Zunehmende Staatsverschuldung", chain:4, note:"Startbedingung Kette 4 — unabhängig (Fiskalik)."},
+  W:   {x:-340, y:390, type:"outcome", label:"Wachstumszwang (Schuldentragfähigkeit: g muss r schlagen)", chain:4, note:"Wachstum = Positivsummenspiel → hält den moralischen Kreis weit (Brücke zu SEC). Ausbleibend → Nullsumme → enger Kreis."},
+  FS:  {x:-340, y:660, type:"outcome", label:"Weniger fiskalischer Spielraum (Zinslast bindet Budget)", chain:4, note:"Dritter, unabhängiger Riegel am hellen Pfad Dp — diesmal: kein Geld."},
+  INV: {x:-590, y:520, type:"branch",  label:"Produktive Schuld (investieren) vs. konsumtive Schuld (alimentieren)", chain:4, note:"Konkretester heller Fork der Karte: produktiv → Wachstum → Positivsumme → weiter Kreis → Ausweg. Konsumtiv → Last ohne Gegenwert → Falle."},
+
+  // ---- Ökologische Schicht ----
+  ECO:  {x:1330, y:470, type:"convergence", label:"Ökologische Degeneration (Klima, Biodiversität, Degradation)", chain:5, note:"Kein Endpunkt, sondern MOTOR: explizit gemachtes R. Speist drei Rückkopplungen — SEC↓, D (Klimamigration), W (Kapitalzerstörung) — und wird so zum zweiten Treiber des Attraktors neben Wachstum/Schulden."},
+  ECOc: {x:1580, y:470, type:"bright",       label:"Klima als gemeinsamer Feind → planetare Kooperation (weiter Kreis)", chain:5, note:"Heller Fork — aber asymmetrisch gebremst: Klima ist langsam/diffus → liest sich als Knappheit, nicht als akuter Feind. Krieg integriert, Klima fragmentiert."},
+
+  // ---- Helle Schicht: Fortschrittskräfte ----
+  AUT:  {x:190,  y:30,  type:"bright",       label:"Automation → Produktivitätsüberschuss", chain:6, note:"JANUS-Gesicht von A: dieselbe KI-Fähigkeit, die in A→B Jobs ersetzt, erzeugt zugleich Überschuss. Hell und dunkel teilen eine Quelle."},
+  EDU:  {x:-60,  y:30,  type:"bright",       label:"KI-Bildung: personalisierte Qualifizierung in der Breite", chain:6, note:"Trifft den Aufwertungspfad Au → mehr Menschen in gute Rollen statt Service/Wegfall. Kippt T1, dämpft Präkarisierung an der Quelle."},
+  MED:  {x:-310, y:30,  type:"bright",       label:"Technischer & medizinischer Fortschritt: Lebensqualität↑, Kosten↓", chain:6, note:"Hebt die Basis-Sicherheit direkt → SEC."},
+  SURP: {x:-310, y:165, type:"convergence",  label:"Potenzieller Überschuss: Produktivität + Wissen + Gesundheit", chain:6, note:"Heller Konvergenzknoten — alle drei Fortschrittskräfte laufen hier zusammen. Erreicht SEC aber nur durch das Verteilungstor DIST."},
+  DIST: {x:-310, y:300, type:"tipping",      label:"★ Wird der Überschuss breit verteilt — oder von wenigen gekapert?", chain:6, note:"DIE Master-Kipp-Variable, sitzt VOR SEC. Breit → Wohlstand gefühlt → weiter Kreis → Riegel öffnen → Utopie. Gekapert → Überfluss OHNE Sicherheit → enger Kreis trotz Reichtum → Dystopie. Nicht Überfluss vs. Mangel, sondern verteilter vs. gekaperter Überfluss."}
+};
+const EDGES = [
+  {f:"A", t:"B",  conf:"plausibel", effect:"verstaerkend", mech:"KI erledigt regelbasierte Wissensarbeit billiger/schneller als ein bezahlter Mensch → Arbeitgeber substituiert. Gegenthese: historisch baut Automation Jobs um statt sie zu vernichten (ATMs → mehr Bankangestellte)."},
+  {f:"B", t:"Bs", conf:"plausibel", effect:"verstaerkend", mech:"Verdrängte Office-Arbeit wandert in schwer automatisierbare personennahe Dienste."},
+  {f:"B", t:"Bm", conf:"plausibel", effect:"verstaerkend", mech:"Modelle brauchen Aufsicht, Korrektur, Haftung → ein Teil wird Kurator/Monitor."},
+  {f:"B", t:"Bw", conf:"plausibel", effect:"verstaerkend", mech:"Keine gleichwertige Nachfrage rückt nach → ein Teil fällt netto weg."},
+  {f:"Bs",t:"C",  conf:"belegt",    effect:"verstaerkend", mech:"Service-Jobs sind schlechter bezahlt, unsicherer, schwächer organisiert → Lohndruck durch Zustrom Verdrängter."},
+  {f:"Bw",t:"C",  conf:"plausibel", effect:"verstaerkend", mech:"Arbeitslosigkeit/Unterbeschäftigung senkt die Verhandlungsmacht der Arbeit."},
+  {f:"Bm",t:"Au", conf:"plausibel", effect:"verstaerkend", mech:"Aufsicht über KI ist knapp und gut bezahlt → für wenige eine Aufwertung statt Abstieg."},
+  {f:"C", t:"D",  conf:"belegt",    effect:"verstaerkend", mech:"Ökonomische Unsicherheit + Gefühl, vom Mainstream nicht geschützt zu werden → Abwendung von der Mitte, Suche nach Systemkritik & Schutzversprechen. Empirisch gut gestützt (Strukturbruch-Regionen kippen messbar zu Populisten)."},
+  {f:"C", t:"Dp", conf:"umstritten",effect:"daempfend",    mech:"Schutz/Transfers durch die Mitte KÖNNTEN stabilisieren — aber: mehr Umverteilung = höhere Abgaben/Lohnkosten → Kapital wandert ab → Standort verliert. Gegenbeispiel Skandinavien: hohe Umverteilung UND wettbewerbsfähig. Deshalb verriegelt, nicht offen."},
+  {f:"D", t:"E",  conf:"belegt",    effect:"verstaerkend", mech:"Die Ränder sind souveränistisch; EU-Skepsis ist Programmkern, nicht Beiwerk → Renationalisierung. Dämpfer (später): Regierungsverantwortung zähmt die Anti-EU-Rhetorik (Meloni)."},
+  {f:"E", t:"C",  conf:"plausibel", effect:"loop",         mech:"RÜCKKOPPLUNG: Renationalisierung → kleinere Märkte, zerfallende Skaleneffekte, Handelsreibung → noch geringere Wettbewerbsfähigkeit → mehr ökonomischer Druck → mehr Präkarisierung. Selbsttragender Kreis."},
+  {f:"T1",t:"C",  conf:"plausibel", effect:"daempfend",    mech:"Kipp-Variable steuert, ob C „Präkarisierung“ oder „Aufwertung“ heißt.", dotted:true},
+  {f:"T2",t:"Dp", conf:"plausibel", effect:"daempfend",    mech:"Kipp-Variable steuert, ob der verriegelte Stabilisierungspfad doch öffnet.", dotted:true},
+
+  // ---- Kette 2: Steuersystem ----
+  {f:"S2",t:"L",  conf:"belegt",    effect:"verstaerkend", mech:"Steuerkeil auf Lohn (Steuern + Abgaben) gehört zu den höchsten der OECD → Arbeit ist im internationalen Vergleich teuer."},
+  {f:"L", t:"J",  conf:"umstritten",effect:"verstaerkend", mech:"Hoher Lohnkostenkeil → Arbeitgeber stellen weniger ein / automatisieren mehr → weniger neue Stellen. Gegenbefund: Deutschland hat trotz hohem Keil niedrige Arbeitslosigkeit — Beschäftigungs-Elastizität ist umkämpft."},
+  {f:"J", t:"C",  conf:"plausibel", effect:"verstaerkend", mech:"KONVERGENZ: weniger Arbeitsplätze → mehr Unterbeschäftigung/Verhandlungsschwäche → Präkarisierung. Zweite unabhängige Kette landet auf demselben Knoten."},
+  {f:"L", t:"B",  conf:"plausibel", effect:"verstaerkend", mech:"VERSTÄRKER zwischen den Ketten: teure Arbeit erhöht den Anreiz, durch KI zu substituieren → hebelt Kette 1s erste Kante (A→B) hoch."},
+  {f:"S2",t:"R",  conf:"belegt",    effect:"verstaerkend", mech:"Subventionierte Energie + niedrig besteuerter Ressourcenverbrauch = unterbepreiste Externalität → Überkonsum/Verschwendung."},
+  {f:"S2",t:"LK", conf:"plausibel", effect:"verstaerkend", mech:"Unilaterale Korrektur der Fehlbepreisung verteuert den Standort → Reform unterbleibt aus Angst vor Wettbewerbsnachteil → Fehlbepreisung bleibt bestehen."},
+  {f:"LK",t:"Dp", conf:"umstritten",effect:"daempfend",    mech:"QUERVERBINDUNG: derselbe Riegel blockiert auch den Umverteilungspfad aus Kette 1 (Dp). Beide Ketten scheitern an derselben Stelle.", dotted:true},
+  {f:"E", t:"LK", conf:"plausibel", effect:"verstaerkend", mech:"QUERVERBINDUNG & Schleife: Renationalisierung (Ende Kette 1) zerstört die supranationale Ebene → der Riegel verfestigt sich → keine Reform → Fehlbepreisung & Präkarisierung laufen weiter."},
+  {f:"T3",t:"LK", conf:"plausibel", effect:"daempfend",    mech:"Kipp-Variable: gelingt Koordination oberhalb der Nation (OECD-Mindeststeuer als Präzedenz), öffnet sich der Riegel. Sonst nationales Gefangenendilemma.", dotted:true},
+
+  // ---- Substrat: anthropologische Schicht ----
+  {f:"P", t:"D",  conf:"plausibel", effect:"verstaerkend", mech:"SUBSTRAT: Unter Druck zieht der Mensch den moralischen Kreis nach innen — „erst wir“. Erklärt, warum Präkarisierung zu Abschottung/Radikalisierung wird statt zu universeller Solidarität.", dotted:true},
+  {f:"P", t:"E",  conf:"plausibel", effect:"verstaerkend", mech:"SUBSTRAT: Renationalisierung IST die konzentrische Kontraktion — der Kreis schrumpft von Welt/Europa auf Land/Community.", dotted:true},
+  {f:"P", t:"LK", conf:"plausibel", effect:"verstaerkend", mech:"SUBSTRAT: In-group-Präferenz macht supranationale Koordination unnatürlich/schwer → der Riegel hält, T3 tendiert zu „Nein“.", dotted:true},
+  {f:"SEC",t:"P", conf:"plausibel", effect:"daempfend",    mech:"REGLER: hohe wahrgenommene Sicherheit/Überfluss weitet den Kreis (Kosmopolitismus in guten Zeiten); Knappheit/Bedrohung verengt ihn. Der kantische Universal ist die Gegenkraft — aber konditional auf Sicherheit.", dotted:true},
+  {f:"C", t:"SEC",conf:"plausibel", effect:"daempfend",    mech:"TIEFSTE SCHLEIFE: Präkarisierung senkt die wahrgenommene Sicherheit → verengt den Kreis → Abschottung → mehr Knappheit → mehr Präkarisierung. Die Prämisse ist der Motor der verstärkenden Schleife.", dotted:true},
+
+  // ---- Kette 3: Geopolitik ----
+  {f:"G",  t:"ORD", conf:"belegt",    effect:"verstaerkend", mech:"Großmächte handeln nach Stärke statt nach Institutionen → Erosion der regelbasierten Ordnung."},
+  {f:"G",  t:"RES", conf:"plausibel", effect:"verstaerkend", mech:"Rüstungswettlauf + Prestigeprojekte (Mars) binden Kapital und Talent → fehlen für nachhaltige Entwicklung der Menschheit."},
+  {f:"G",  t:"BLOC",conf:"plausibel", effect:"verstaerkend", mech:"Äußere Bedrohung kann Kohäsion erzeugen: gemeinsamer Feind → „Europa als Block“ statt nationaler Zerfall. Der helle Fork."},
+  {f:"RES",t:"R",   conf:"plausibel", effect:"verstaerkend", mech:"KONVERGENZ: geopolitische Fehlallokation trifft die ökologische Fehlbepreisung — dieselbe Verschwendung aus zwei Quellen."},
+  {f:"ORD",t:"T3",  conf:"belegt",    effect:"daempfend",    mech:"KONVERGENZ (3. Kette): machtbasierte Ordnung macht regelbasierte supranationale Koordination unmöglich → T3 = „Nein“. Der Master-Schalter ist jetzt überdeterminiert.", dotted:true},
+  {f:"P",  t:"ORD", conf:"plausibel", effect:"verstaerkend", mech:"SUBSTRAT auf Makroebene: „first“-Politik der Staaten = konzentrischer Kreis auf Staatsebene → machtbasierte Ordnung. P wiederholt sich im großen Maßstab.", dotted:true},
+  {f:"ORD",t:"SYS", conf:"belegt",    effect:"verstaerkend", mech:"Machtbasierte Ordnung begünstigt Zentralisierung & Stärke → die Systemfrage (Demokratie vs. Autokratie) wird offen gestellt."},
+  {f:"BLOC",t:"LK", conf:"plausibel", effect:"daempfend",    mech:"GEGEN-FORK: europäische Integration unter Druck wäre ein Stück supranationale Koordination → könnte den Riegel teilweise öffnen. Der helle Ausweg.", dotted:true},
+
+  // ---- Kette 4: Verschuldung / Fiskalik ----
+  {f:"S4", t:"W",  conf:"belegt",    effect:"verstaerkend", mech:"Schulden bleiben nur tragbar, wenn die Wirtschaft schneller wächst als die Zinslast (g > r) → Wachstumszwang."},
+  {f:"S4", t:"FS", conf:"belegt",    effect:"verstaerkend", mech:"Zinslast und Tilgung binden das Budget → weniger Spielraum für Investition/Alimentierung."},
+  {f:"S4", t:"INV",conf:"plausibel", effect:"verstaerkend", mech:"Die Schuld kann produktiv (investiv) oder konsumtiv verwendet werden — Verzweigung, die über Wachstum entscheidet."},
+  {f:"INV",t:"W",  conf:"plausibel", effect:"daempfend",    mech:"HELLER FORK: produktive Schuld (Investition in Produktivität/Energie/Bildung) erfüllt den Wachstumszwang → Positivsumme. Konsumtive Schuld nicht.", dotted:true},
+  {f:"FS", t:"Dp", conf:"belegt",    effect:"daempfend",    mech:"DRITTER RIEGEL: selbst bei politischem Willen kein Geld → Umverteilung/Absicherung scheitert fiskalisch. Dp aus drei Richtungen verriegelt.", dotted:true},
+  {f:"FS", t:"C",  conf:"plausibel", effect:"verstaerkend", mech:"Der Staat kann Präkarisierte nicht abfedern → verschärft die Präkarisierung direkt."},
+  {f:"W",  t:"R",  conf:"plausibel", effect:"verstaerkend", mech:"KONVERGENZ: erzwungenes Wachstum frisst Ressourcen → kollidiert mit Nachhaltigkeit. R sammelt nun aus drei Quellen."},
+  {f:"W",  t:"SEC",conf:"plausibel", effect:"daempfend",    mech:"BRÜCKE zum Substrat: erfülltes Wachstum = Positivsummen-Überfluss → weiter Kreis (SEC hoch). Ausbleibendes Wachstum = Nullsumme → enger Kreis. Der ökonomische Motor unter SEC.", dotted:true},
+
+  // ---- Ökologische Schicht ----
+  {f:"R",   t:"ECO",  conf:"belegt",    effect:"verstaerkend", mech:"Kumulierte Verschwendung und unbepreiste Externalitäten → Klimawandel, Biodiversitätsverlust, Bodendegradation."},
+  {f:"ECO", t:"SEC",  conf:"plausibel", effect:"daempfend",    mech:"MOTOR-RÜCKKOPPLUNG: ökologische Schäden = reale Knappheit (Ernten, Wasser, Land) → senkt wahrgenommene Sicherheit → verengt den Kreis. Zweiter Treiber des Attraktors.", dotted:true},
+  {f:"ECO", t:"D",    conf:"plausibel", effect:"verstaerkend", mech:"Klimaschäden → Migrationsdruck → In-group-Backlash → Radikalisierung. Zweite, direkte Speisung von D, unabhängig vom ökonomischen Weg über C."},
+  {f:"ECO", t:"W",    conf:"plausibel", effect:"daempfend",    mech:"Klimaschäden zerstören Kapital und Produktivität → untergraben das Wachstum, das die Schuldenfalle entschärfen müsste. Degeneration und Verschuldung verstärken sich gegenseitig."},
+  {f:"ECO", t:"ECOc", conf:"plausibel", effect:"verstaerkend", mech:"Der helle Fork: existenzielle Bedrohung KÖNNTE den Kreis auf „Menschheit“ weiten — aber gebremst, weil Klima diffus/langsam ist.", dotted:true},
+  {f:"ECOc",t:"LK",   conf:"plausibel", effect:"daempfend",    mech:"Gelänge planetare Kooperation, öffnete sie den Riegel (wie BLOC) — der schmale helle Ausweg auf globaler Ebene.", dotted:true},
+
+  // ---- Helle Schicht: Fortschrittskräfte ----
+  {f:"A",   t:"AUT", conf:"plausibel", effect:"verstaerkend", mech:"JANUS: dieselbe KI-Fähigkeit, die Jobs ersetzt (A→B), erzeugt zugleich einen Produktivitätsüberschuss. Eine Quelle, zwei Gesichter.", dotted:true},
+  {f:"AUT", t:"SURP",conf:"plausibel", effect:"verstaerkend", mech:"Produktivitätsüberschuss speist den potenziellen Wohlstand."},
+  {f:"EDU", t:"SURP",conf:"plausibel", effect:"verstaerkend", mech:"Breite Qualifizierung speist den potenziellen Wohlstand (Humankapital)."},
+  {f:"MED", t:"SURP",conf:"plausibel", effect:"verstaerkend", mech:"Gesundheits-/Technikgewinne speisen den potenziellen Wohlstand."},
+  {f:"EDU", t:"Au",  conf:"plausibel", effect:"verstaerkend", mech:"KI-Bildung qualifiziert in der Breite → mehr Menschen in den Aufwertungspfad statt Service/Wegfall → kippt T1, dämpft Präkarisierung an der Quelle."},
+  {f:"MED", t:"SEC", conf:"plausibel", effect:"daempfend",    mech:"Fortschritt hebt Lebensqualität und senkt Kosten → hebt die Basis-Sicherheit direkt → weiter Kreis.", dotted:true},
+  {f:"SURP",t:"DIST",conf:"belegt",    effect:"verstaerkend", mech:"Der Überschuss existiert — jetzt entscheidet das Verteilungstor, ob er ankommt."},
+  {f:"DIST",t:"SEC", conf:"plausibel", effect:"daempfend",    mech:"UTOPIE-ROUTE: breit verteilter Überschuss → breit gefühlter Wohlstand → SEC hoch → weiter Kreis → Riegel öffnen.", dotted:true},
+  {f:"DIST",t:"C",   conf:"plausibel", effect:"verstaerkend", mech:"DYSTOPIE-ROUTE: gekaperter Überschuss → Aufwertung nur für wenige, Rest präkär → Überfluss OHNE Sicherheit → enger Kreis trotz Reichtum."}
+];
+// ====================================================================
+
+const NS="http://www.w3.org/2000/svg";
+function el(tag,attrs){const e=document.createElementNS(NS,tag);
+  if(attrs)for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+const svg=document.getElementById("svg");
+const stage=document.getElementById("stage");
+const NW=200, NH=72;
+const CONF={belegt:"var(--belegt)",plausibel:"var(--plausibel)",umstritten:"var(--umstritten)",spekulativ:"var(--spekulativ)"};
+const CONFHEX={belegt:"#3ea66b",plausibel:"#d49a2a",umstritten:"#9b6bd6",spekulativ:"#c0564f"};
+const TYPE={
+  start:{fill:"#16314d",stroke:"#4a90d9",badge:""},
+  branch:{fill:"#2a2433",stroke:"#8a6fb0",badge:"◇"},
+  convergence:{fill:"#173024",stroke:"#3ea66b",badge:"◎",glow:true},
+  outcome:{fill:"#1c2027",stroke:"#3a414e",badge:""},
+  bright:{fill:"#1d2b1f",stroke:"#5fa86b",badge:""},
+  tipping:{fill:"#2e2611",stroke:"#e0b341",badge:""},
+  locked:{fill:"#1a1c20",stroke:"#5b6270",badge:"🔒",dash:"5 4"},
+  premise:{fill:"#241a2e",stroke:"#a07bc8",badge:"⊙",glow:true}
+};
+
+let view={x:0,y:0,k:1};
+const gRoot=el("g");
+svg.appendChild(gRoot);
+// defs for arrowheads per confidence
+const defs=el("defs");
+for(const c in CONFHEX){
+  const m=el("marker",{id:"arw-"+c,viewBox:"0 0 10 10",refX:9,refY:5,markerWidth:7,markerHeight:7,orient:"auto-start-reverse"});
+  const p=el("path",{d:"M0 0 L10 5 L0 10 z",fill:CONFHEX[c]});
+  m.appendChild(p);defs.appendChild(m);
+}
+svg.appendChild(defs);
+
+const gEdges=el("g");gRoot.appendChild(gEdges);
+const gNodes=el("g");gRoot.appendChild(gNodes);
+
+function center(id){const n=NODES[id];return {x:n.x+NW/2,y:n.y+NH/2};}
+// clip line endpoint to box border
+function clip(cx,cy,bx,by){
+  const dx=bx-cx, dy=by-cy;
+  const hw=NW/2+4, hh=NH/2+4;
+  let tx=Infinity,ty=Infinity;
+  if(dx!==0) tx=hw/Math.abs(dx);
+  if(dy!==0) ty=hh/Math.abs(dy);
+  const t=Math.min(tx,ty);
+  return {x:cx+dx*t, y:cy+dy*t};
+}
+
+EDGES.forEach((e,i)=>{
+  const a=center(e.f), b=center(e.t);
+  const p1=clip(a.x,a.y,b.x,b.y);
+  const p2=clip(b.x,b.y,a.x,a.y);
+  let d;
+  if(e.effect==="loop"){
+    const mx=(p1.x+p2.x)/2 - 230, my=(p1.y+p2.y)/2;
+    d=`M${p1.x} ${p1.y} Q ${mx} ${my} ${p2.x} ${p2.y}`;
+  } else {
+    d=`M${p1.x} ${p1.y} L${p2.x} ${p2.y}`;
+  }
+  const stroke=CONF[e.conf];
+  const path=el("path",{d,class:"edge",stroke,
+    "marker-end":"url(#arw-"+e.conf+")"});
+  if(e.effect==="daempfend"||e.dotted) path.setAttribute("stroke-dasharray","7 5");
+  if(e.effect==="loop") path.setAttribute("stroke-dasharray","2 5");
+  if(e.dotted) path.setAttribute("stroke-dasharray","2 5");
+  gEdges.appendChild(path);
+  const hit=el("path",{d,class:"ehit"});
+  hit.addEventListener("click",ev=>{ev.stopPropagation();showEdge(e);});
+  gEdges.appendChild(hit);
+});
+
+for(const id in NODES){
+  const n=NODES[id], t=TYPE[n.type];
+  const g=el("g",{class:"nodeBox",transform:`translate(${n.x},${n.y})`});
+  const rect=el("rect",{width:NW,height:NH,rx:11,fill:t.fill,stroke:t.stroke,
+    "stroke-width":n.type==="convergence"?3:1.6});
+  if(t.dash) rect.setAttribute("stroke-dasharray",t.dash);
+  if(t.glow) rect.setAttribute("filter","drop-shadow(0 0 7px rgba(62,166,107,.55))");
+  g.appendChild(rect);
+  const fo=el("foreignObject",{width:NW,height:NH});
+  const div=document.createElement("div");
+  div.className="nlabel";
+  div.innerHTML=(t.badge?`<span class="badge" style="margin-right:5px">${t.badge}</span>`:"")+n.label;
+  fo.appendChild(div);g.appendChild(fo);
+  g.addEventListener("click",ev=>{ev.stopPropagation();showNode(id);});
+  gNodes.appendChild(g);
+}
+
+function showNode(id){
+  const n=NODES[id];
+  const ins=EDGES.filter(e=>e.t===id), outs=EDGES.filter(e=>e.f===id);
+  let h=`<div class="title">${n.label}</div>`;
+  h+=`<span class="tag" style="background:#222732;color:#cdd2da">${labelType(n.type)}</span>`;
+  if(n.note) h+=`<div class="row"><div class="k">Kommentar</div>${n.note}</div>`;
+  if(outs.length){h+=`<div class="row"><div class="k">Wirkt auf →</div>`;
+    outs.forEach(e=>h+=edgeLine(e,NODES[e.t].label));h+=`</div>`;}
+  if(ins.length){h+=`<div class="row"><div class="k">← Bewirkt durch</div>`;
+    ins.forEach(e=>h+=edgeLine(e,NODES[e.f].label,true));h+=`</div>`;}
+  document.getElementById("detail").innerHTML=h;
+}
+function showEdge(e){
+  let h=`<div class="title">${NODES[e.f].label} → ${NODES[e.t].label}</div>`;
+  h+=`<span class="tag" style="background:${CONFHEX[e.conf]}33;color:${CONFHEX[e.conf]}">Konfidenz: ${e.conf}</span>`;
+  h+=`<span class="tag" style="background:#222732;color:#cdd2da">${effLabel(e.effect)}</span>`;
+  h+=`<div class="row"><div class="k">Mechanismus (das „weil“)</div><span class="mech">${e.mech}</span></div>`;
+  document.getElementById("detail").innerHTML=h;
+}
+function edgeLine(e,other,incoming){
+  const arrow=incoming?"← ":"→ ";
+  return `<div style="margin:5px 0;cursor:pointer" onclick='__se(${JSON.stringify(JSON.stringify(e))})'>
+    <span style="color:${CONFHEX[e.conf]}">●</span> ${arrow}${other}
+    <div class="mech" style="color:var(--muted);font-size:11.5px;margin:2px 0 0 14px">${e.mech.slice(0,90)}${e.mech.length>90?"…":""}</div></div>`;
+}
+window.__se=s=>showEdge(JSON.parse(JSON.parse(s)));
+function labelType(t){return {start:"Startbedingung",branch:"Verzweigungspunkt ◇",convergence:"Konvergenzknoten ◎",outcome:"Zustand",bright:"Heller Pfad",tipping:"Kipp-Variable ★",locked:"Verriegelt 🔒"}[t]||t;}
+function effLabel(e){return {verstaerkend:"verstärkend",daempfend:"dämpfend",loop:"Rückkopplung"}[e]||e;}
+
+// pan & zoom
+function apply(){gRoot.setAttribute("transform",`translate(${view.x},${view.y}) scale(${view.k})`);}
+apply();
+let drag=null;
+stage.addEventListener("mousedown",e=>{drag={x:e.clientX,y:e.clientY,vx:view.x,vy:view.y};stage.classList.add("drag");});
+window.addEventListener("mousemove",e=>{if(!drag)return;view.x=drag.vx+(e.clientX-drag.x);view.y=drag.vy+(e.clientY-drag.y);apply();});
+window.addEventListener("mouseup",()=>{drag=null;stage.classList.remove("drag");});
+stage.addEventListener("wheel",e=>{e.preventDefault();
+  const r=stage.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;
+  const f=e.deltaY<0?1.1:0.9;const nk=Math.max(.4,Math.min(2.4,view.k*f));
+  view.x=mx-(mx-view.x)*(nk/view.k);view.y=my-(my-view.y)*(nk/view.k);view.k=nk;apply();
+},{passive:false});
+stage.addEventListener("click",()=>{document.getElementById("detail").innerHTML=
+  '<div class="empty">Nichts ausgewählt. Klick einen Knoten oder eine Kante.</div>';});
+
+// fit on load
+(function fit(){
+  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  for(const id in NODES){const n=NODES[id];minX=Math.min(minX,n.x);minY=Math.min(minY,n.y);
+    maxX=Math.max(maxX,n.x+NW);maxY=Math.max(maxY,n.y+NH);}
+  const pad=60;const r=stage.getBoundingClientRect();
+  const k=Math.min((r.width-pad*2)/(maxX-minX),(r.height-pad*2)/(maxY-minY),1.4);
+  view.k=k;view.x=pad-minX*k+(r.width-pad*2-(maxX-minX)*k)/2;view.y=pad-minY*k;apply();
+})();
+</script>
+</body>
+</html>
