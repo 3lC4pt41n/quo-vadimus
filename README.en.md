@@ -4,7 +4,7 @@
 
 A scenario of the future, built as a **system of effects**: not a vibe, not a prophecy, but a directed causal graph you can disagree with at a specific point. Every causal link carries a named mechanism ("because…"), a confidence (evidenced / plausible / contested), and a **sign** (+ same-direction / − opposite-direction).
 
-The interactive map lives in [`quo-vadimus.html`](./quo-vadimus.html) — open it in a browser, click a node or an edge to see the mechanism. State: 39 nodes, 75 signed edges, structurally checked (no dead ends, no dangling references). The map's labels are in German; this document is the English reading guide.
+The interactive map lives in [`quo-vadimus.html`](./quo-vadimus.html) — open it in a browser, click a node or an edge to see the mechanism. State: 46 nodes, 90 signed edges, structurally checked (no dead ends, no dangling references); 15 edges carry source citations. The map is bilingual — use the DE/EN toggle in the header.
 
 ## The system in five sentences
 
@@ -31,6 +31,10 @@ The system keeps four narrow exits open — visible, so it stays a scenario and 
 ## The deeper structure
 
 Three layers: the **surface** (seven chains), the **lock** (`LK` / locational competition, which bolts shut national go-it-alone moves), and the **substrate** (`P` — the concentric moral circle, governed by `SEC`, perceived security). Two **externality engines** mirror each other: ecological degeneration (`ECO`) and social erosion (`SOZ`) — both arise from the system, but their costs fall on society as a whole, and both feed back through `SEC`. Three self-sustaining **feedback loops** hold the dark attractor: renationalization → weaker competitiveness → more pressure → more precarization (`E→C`); precarization → less security → narrower circle → more closure (`C→SEC`); and social erosion → less security for everyone → narrower circle (`SOZ→SEC`).
+
+## Empirical mediators (evidence layer)
+
+A later extension replaces several abstract claims with observable intermediate variables — reducing dependence on the hard-to-measure premise `P`. New nodes include: housing-cost insecurity (`HOU`, explains falling `SEC` despite growth), institutional trust (`TRUST`, a measurable proxy for `P`: insecurity → loss of trust → populism), market power/concentration (`MPWR`, the economic capture channel via markups and labor share), the effectiveness of social protection (`SPROT`), adult-learning access (`ADL`), and demographic labor scarcity (`VAC`). These 15 edges carry source citations (Eurofound, OECD, World Inequality Lab, De Loecker/Autor, etc.), visible in the map's detail panel.
 
 ## Which link don't you believe?
 

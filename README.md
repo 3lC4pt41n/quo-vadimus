@@ -4,7 +4,7 @@
 
 Ein Zukunftsszenario, gebaut als **Wirksystem**: kein Vibe, keine Prophezeiung, sondern ein gerichteter Kausalgraph, dem man an einer bestimmten Stelle widersprechen kann. Jede Wirkbeziehung trägt einen benannten Mechanismus („weil…"), eine Konfidenz (belegt / plausibel / umstritten) und ein **Vorzeichen** (+ gleichgerichtet / − gegengerichtet).
 
-Die interaktive Karte liegt in [`quo-vadimus.html`](./quo-vadimus.html) — im Browser öffnen, Knoten oder Kante anklicken, um den Mechanismus zu sehen. Stand: 39 Knoten, 75 signierte Kanten, strukturell geprüft (keine Sackgassen, keine offenen Referenzen).
+Die interaktive Karte liegt in [`quo-vadimus.html`](./quo-vadimus.html) — im Browser öffnen, Knoten oder Kante anklicken, um den Mechanismus zu sehen. Stand: 46 Knoten, 90 signierte Kanten, strukturell geprüft (keine Sackgassen, keine offenen Referenzen); 15 Kanten tragen Quellen-Belege.
 
 ## Das System in fünf Sätzen
 
@@ -31,6 +31,10 @@ Die **produktive Schuld** (investieren statt alimentieren) kann tatsächliches W
 ## Die tiefere Struktur
 
 Drei Ebenen: die **Oberfläche** (sieben Ketten), der **Riegel** (`LK` / Standortwettbewerb, der nationale Alleingänge verriegelt) und das **Substrat** (`P` — der konzentrische moralische Kreis, geregelt von `SEC`, der wahrgenommenen Sicherheit). Zwei **Externalitäts-Motoren** spiegeln sich: die ökologische Degeneration (`ECO`) und die soziale Erosion (`SOZ`) — beide entstehen aus dem System, ihre Kosten trägt aber die ganze Gesellschaft, und beide schlagen über `SEC` zurück. Drei selbsttragende **Rückkopplungen** halten den dunklen Attraktor: Renationalisierung → schwächere Wettbewerbsfähigkeit → mehr Druck → mehr Präkarisierung (`E→C`); Präkarisierung → weniger Sicherheit → engerer Kreis → mehr Abschottung (`C→SEC`); und soziale Erosion → weniger Sicherheit für alle → engerer Kreis (`SOZ→SEC`).
+
+## Empirische Mediatoren (Evidenz-Schicht)
+
+Eine spätere Erweiterung ersetzt mehrere abstrakte Behauptungen durch beobachtbare Zwischenvariablen — und reduziert damit die Abhängigkeit von der schwer messbaren Prämisse `P`. Neu sind unter anderem: Wohnkostenunsicherheit (`HOU`, erklärt sinkendes `SEC` trotz Wachstum), institutionelles Vertrauen (`TRUST`, ein messbarer Proxy für `P`: Unsicherheit → Vertrauensverlust → Populismus), Marktmacht/Konzentration (`MPWR`, der ökonomische Capture-Kanal über Markups und Lohnquote), die Wirksamkeit sozialer Sicherung (`SPROT`), der Erwachsenenlern-Zugang (`ADL`) und die demografische Arbeitskräfteknappheit (`VAC`). Diese 15 Kanten tragen Quellen-Belege (Eurofound, OECD, World Inequality Lab, De Loecker/Autor u. a.), sichtbar im Detail-Panel der Karte.
 
 ## An welchem Link glaubst du nicht?
 
