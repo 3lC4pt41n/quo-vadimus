@@ -360,6 +360,27 @@ function drawNodes(){
     gNodes.appendChild(g);
   }
 }
+const KREF={
+  K01:"https://wir2026.wid.world/",
+  K02:"https://www.oecd.org/en/publications/more-effective-social-protection-for-stronger-economic-growth_3947946a-en.html",
+  K03:"https://www.eurofound.europa.eu/en/surveys-and-data/data-catalogue/difficulty-making-ends-meet-and-housing-insecurity-eu-2024",
+  K04:"https://www.eurofound.europa.eu/en/surveys-and-data/data-catalogue/trust-institutions-eu-2020-2024-scale-1-10",
+  K05:"https://www.oecd.org/en/publications/oecd-survey-on-drivers-of-trust-in-public-institutions-2024-results_9a20554b-en.html",
+  K06:"https://igier.unibocconi.eu/sites/default/files/media/publication/704_0.pdf",
+  K07:"https://academic.oup.com/qje/article/135/2/561/5714769",
+  K08:"https://academic.oup.com/qje/article/135/2/645/5721266",
+  K09:"https://www.oecd.org/en/publications/corporate-tax-statistics-2025_6a915941-en.html",
+  K10:"https://www.oecd.org/en/publications/competition-market-study-of-online-marketplaces-in-poland-latvia-and-lithuania_3134e707-en.html",
+  K14:"https://www.oecd.org/en/publications/adult-skills-and-productivity_12ac6e8c-en.html",
+  K15:"https://www.oecd.org/en/publications/trends-in-adult-learning_ec0624a6-en.html",
+  K16:"https://www.oecd.org/en/publications/oecd-employment-outlook-2025_194a947b-en.html",
+  K17:"https://joint-research-centre.ec.europa.eu/jrc-news-and-updates/tackling-eus-shrinking-workforce-better-education-more-women-jobs-skilled-migration-2025-06-11_en",
+  K18:"https://www.eurofound.europa.eu/en/publications/all/online-platform-work-european-union-implications-working-conditions-access-to-information",
+  DE01:"https://doku.iab.de/forschungsbericht/2025/fb2325.pdf"
+};
+function linkify(t){return t.replace(/\b(K\d{2}|DE\d{2})\b/g,m=>KREF[m]
+  ?`<a href="${KREF[m]}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#7fb3ff;text-decoration:underline">${m}</a>`:m);}
+
 function showNode(id){
   const n=NODES[id], U=UI[LANG];
   const ins=EDGES.filter(e=>e.t===id), outs=EDGES.filter(e=>e.f===id);
@@ -378,7 +399,7 @@ function showEdge(e){
   h+=`<span class="tag" style="background:${CONFHEX[e.conf]}33;color:${CONFHEX[e.conf]}">${U.conf}: ${CONFLABEL[LANG][e.conf]}</span>`;
   h+=`<span class="tag" style="background:#222732;color:#cdd2da">${polLabel(e)}</span>`;
   h+=`<div class="row"><div class="k">${U.mechh}</div><span class="mech">${EM(e)}</span></div>`;
-  if(e.src) h+=`<div class="row"><div class="k">${U.beleg}</div>${e.src}</div>`;
+  if(e.src) h+=`<div class="row"><div class="k">${U.beleg}</div>${linkify(e.src)}</div>`;
   document.getElementById("detail").innerHTML=h;
 }
 function polLabel(e){const T=POLTXT[LANG];return (e.pol==="+"?T.p:T.m)+(e.loop?T.loop:"");}
@@ -386,7 +407,8 @@ function edgeLine(e,other,incoming){
   const arrow=incoming?"← ":"→ ", m=EM(e);
   return `<div style="margin:5px 0;cursor:pointer" onclick='__se(${JSON.stringify(JSON.stringify(e))})'>
     <span style="color:${CONFHEX[e.conf]}">${e.pol==="+"?"＋":"－"}</span> ${arrow}${other}
-    <div class="mech" style="color:var(--muted);font-size:11.5px;margin:2px 0 0 14px">${m.slice(0,90)}${m.length>90?"…":""}</div></div>`;
+    <div class="mech" style="color:var(--muted);font-size:11.5px;margin:2px 0 0 14px">${m.slice(0,90)}${m.length>90?"…":""}</div>
+    ${e.src?`<div style="color:#6f9a6f;font-size:10.5px;margin:2px 0 0 14px">📎 ${linkify(e.src)}</div>`:""}</div>`;
 }
 window.__se=s=>showEdge(JSON.parse(JSON.parse(s)));
 function clearDetail(){document.getElementById("detail").innerHTML=
