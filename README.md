@@ -4,7 +4,7 @@
 
 Ein Zukunftsszenario, gebaut als **Wirksystem**: kein Vibe, keine Prophezeiung, sondern ein gerichteter Kausalgraph, dem man an einer bestimmten Stelle widersprechen kann. Jede Wirkbeziehung trägt einen benannten Mechanismus („weil…"), eine Konfidenz (belegt / plausibel / umstritten) und ein **Vorzeichen** (+ gleichgerichtet / − gegengerichtet).
 
-Die interaktive Karte liegt in [`quo-vadimus.html`](./quo-vadimus.html) — im Browser öffnen, Knoten oder Kante anklicken, um den Mechanismus zu sehen. Stand: 46 Knoten, 90 signierte Kanten, strukturell geprüft (keine Sackgassen, keine offenen Referenzen); 15 Kanten tragen Quellen-Belege.
+Die interaktive Karte liegt in [`quo-vadimus.html`](./quo-vadimus.html) — im Browser öffnen, Knoten oder Kante anklicken, um den Mechanismus zu sehen. Stand **V0.1**: 49 Knoten, 102 signierte Kanten, strukturell geprüft (keine Sackgassen, keine offenen Referenzen); 23 Kanten tragen Quellen-Belege. Der eingefrorene Ursprungszustand bleibt als [V0](./versions/v0/quo-vadimus.html) erreichbar (Git-Tag `v0`).
 
 ## Das System in fünf Sätzen
 
@@ -14,7 +14,7 @@ Sieben unabhängige Startbedingungen — KI-Automation, das Steuersystem, die R�
 
 > **Verteilungsgrad: Wird der wachsende Überschuss breit verteilt — oder von wenigen gekapert?**
 
-Sie sitzt vor allem anderen (`DIST → SEC` in der Karte) und ist im Graph **verkabelt**, nicht behauptet. Was sie zur Kaperung drückt: der Standortwettbewerbs-Riegel (`LK`), die machtbasierte Ordnung (`ORD`), die Steuer-Fehlbepreisung (`S2`), der schuldengetriebene Wachstumszwang (`WZ`), die konzentrierte Aufwertung weniger (`Au`) und die Autokratie (`SYS`). Was sie hebt: breit zugängliche KI-Bildung (`EDU`) und der vorhandene Überschuss selbst (`SURP`). Beide Pole hängen an diesem einen Knoten:
+Sie sitzt vor allem anderen (`DIST → SEC` in der Karte) und ist im Graph **verkabelt**, nicht behauptet. Was sie zur Kaperung drückt: der Standortwettbewerbs-Riegel (`LK`), die machtbasierte Ordnung (`ORD`), die Steuer-Fehlbepreisung (`S2`), der schuldengetriebene Wachstumszwang (`WZ`), die konzentrierte Aufwertung weniger (`Au`) und die Autokratie (`SYS`). Was sie hebt: breit zugängliche KI-Bildung (`EDU`), der vorhandene Überschuss selbst (`SURP`) — und seit V0.1: der Bürgerfonds (`FUND`), Belegschaftseigentum (`OWN`), die Arbeitskräfteknappheit (`VAC`) sowie, umstritten, die äußere Bedrohung (`G`). Beide Pole hängen an diesem einen Knoten:
 
 **Utopie-Route** — breit verteilt → breit gefühlter Wohlstand → wahrgenommene Sicherheit steigt → der moralische Kreis weitet sich → die Riegel öffnen sich (supranationale Koordination wird möglich) → Stabilisierung.
 
@@ -35,6 +35,20 @@ Drei Ebenen: die **Oberfläche** (sieben Ketten), der **Riegel** (`LK` / Standor
 ## Empirische Mediatoren (Evidenz-Schicht)
 
 Eine spätere Erweiterung ersetzt mehrere abstrakte Behauptungen durch beobachtbare Zwischenvariablen — und reduziert damit die Abhängigkeit von der schwer messbaren Prämisse `P`. Neu sind unter anderem: Wohnkostenunsicherheit (`HOU`, erklärt sinkendes `SEC` trotz Wachstum), institutionelles Vertrauen (`TRUST`, ein messbarer Proxy für `P`: Unsicherheit → Vertrauensverlust → Populismus), Marktmacht/Konzentration (`MPWR`, der ökonomische Capture-Kanal über Markups und Lohnquote), die Wirksamkeit sozialer Sicherung (`SPROT`), der Erwachsenenlern-Zugang (`ADL`) und die demografische Arbeitskräfteknappheit (`VAC`). Diese 15 Kanten tragen Quellen-Belege (Eurofound, OECD, World Inequality Lab, De Loecker/Autor u. a.), sichtbar im Detail-Panel der Karte.
+
+## V0.1 — was Schleifen-Zensus und Reddit-Diskussion ergänzt haben
+
+Die erste Außenrunde ([r/SocialDemocracy](https://www.reddit.com/r/SocialDemocracy/comments/1u19nlw/)) und eine maschinelle Strukturanalyse haben die Karte an fünf Stellen verändert:
+
+**Bistabilität statt Verhängnis.** Der Zensus zählt in V0.1 178 Zyklen, davon 148 selbstverstärkend. Verstärkende Schleifen sind richtungslos — sie verstärken jede Auslenkung, abwärts wie aufwärts. Die Master-Schleife `LK→DIST→SEC→P→LK` ist jetzt als Rückkopplung markiert: dieselbe Verkabelung, die die Dystopie hält, rastet als Utopie ein, sobald `DIST` einmal steigt. Die Karte misst Sensitivität, keine Wahrscheinlichkeit.
+
+**Der Bürgerfonds-Fork (`CFT→FUND`).** Der konkreteste neue Ausweg: eine Cashflow-Steuer mit Personalabzug im Inland — eine Robotersteuer ohne Roboterdefinition, wer automatisiert zahlt, wer beschäftigt schirmt ab — speist einen breit gestreuten Bürgerfonds mit universeller Dividende. Selbstfinanzierend (umgeht `FS`), exit-resistent (inländischer Cashflow flieht nicht), politisch gepanzert nach Alaska-Vorbild. Verbleibender Riegel: Hegemonie-Vergeltung (`ORD→CFT`, umstritten).
+
+**Wirtschaftsdemokratie (`OWN`).** Belegschaftseigenes Kapital kann nicht fliehen — es umgeht den Standortriegel. Aber Stimme ist nicht Eigentum, und Mandate werden per Rechtsformwechsel arbitriert (SE-Flucht). Praktikabel als finanzierte Option: Vorkaufsrecht der Belegschaft, Buyout-Fonds (Marcora), Genossenschaftsbank.
+
+**Der Bismarck-Thermostat (`D→Dp`) und der vierte Riegel (`C→FS`).** Historisch erzeugt Radikalisierung Umverteilung über Elitenangst (Bismarck, New Deal, NHS bei ~250 % Schuldenquote) — damit existieren erstmals balancierende Schleifen im Sozialsystem der Karte (30 in V0.1 gegenüber 2 in V0). Gegenläufig neu: Lohnfinanzierte Umverteilung hängt an genau der Lohnbasis, die die KI-Kette erodiert.
+
+**Gegenkanten & Evidenz 2026.** Das Verteilungstor leckt (`AUT→SEC`: Konsum-Ungleichheit ist überall kleiner als Einkommens-Ungleichheit), Massenbedrohung hob historisch die Verteilung (`G→DIST`, Scheve/Stasavage, umstritten), Arbeitskräfteknappheit drückt `DIST` nach oben (`VAC→DIST`). Und drei „umstrittene" helle Forks sind laufende Empirie geworden: globale Mindeststeuer in Kraft (Side-by-Side-Carve-out statt Kollaps), CBAM scharf seit 1.1.2026, SAFE/Readiness 2030 von 18 Staaten gezeichnet.
 
 ## An welchem Link glaubst du nicht?
 

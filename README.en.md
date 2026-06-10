@@ -4,7 +4,7 @@
 
 A scenario of the future, built as a **system of effects**: not a vibe, not a prophecy, but a directed causal graph you can disagree with at a specific point. Every causal link carries a named mechanism ("because…"), a confidence (evidenced / plausible / contested), and a **sign** (+ same-direction / − opposite-direction).
 
-The interactive map lives in [`quo-vadimus.html`](./quo-vadimus.html) — open it in a browser, click a node or an edge to see the mechanism. State: 46 nodes, 90 signed edges, structurally checked (no dead ends, no dangling references); 15 edges carry source citations. The map is bilingual — use the DE/EN toggle in the header.
+The interactive map lives in [`quo-vadimus.html`](./quo-vadimus.html) — open it in a browser, click a node or an edge to see the mechanism. State **V0.1**: 49 nodes, 102 signed edges, structurally checked (no dead ends, no dangling references); 23 edges carry source citations. The frozen original remains reachable as [V0](./versions/v0/quo-vadimus.html) (git tag `v0`). The map is bilingual — use the DE/EN toggle in the header.
 
 ## The system in five sentences
 
@@ -14,7 +14,7 @@ Seven independent starting conditions — AI automation, the tax system, the ret
 
 > **Degree of distribution: Is the growing surplus broadly distributed — or captured by a few?**
 
-It sits upstream of everything else (`DIST → SEC` on the map) and is **wired into the graph**, not merely asserted. What pushes it toward capture: the locational-competition lock (`LK`), power-based order (`ORD`), tax mispricing (`S2`), the debt-driven growth imperative (`WZ`), the concentrated upskilling of a few (`Au`), and autocracy (`SYS`). What lifts it: broadly accessible AI education (`EDU`) and the surplus itself (`SURP`). Both poles hang on this one node:
+It sits upstream of everything else (`DIST → SEC` on the map) and is **wired into the graph**, not merely asserted. What pushes it toward capture: the locational-competition lock (`LK`), power-based order (`ORD`), tax mispricing (`S2`), the debt-driven growth imperative (`WZ`), the concentrated upskilling of a few (`Au`), and autocracy (`SYS`). What lifts it: broadly accessible AI education (`EDU`), the surplus itself (`SURP`) — and since V0.1: the citizen fund (`FUND`), worker ownership (`OWN`), labor scarcity (`VAC`), plus, contested, external threat (`G`). Both poles hang on this one node:
 
 **Utopia route** — broadly distributed → broadly felt prosperity → perceived security rises → the moral circle widens → the locks open (supranational coordination becomes possible) → stabilization.
 
@@ -35,6 +35,20 @@ Three layers: the **surface** (seven chains), the **lock** (`LK` / locational co
 ## Empirical mediators (evidence layer)
 
 A later extension replaces several abstract claims with observable intermediate variables — reducing dependence on the hard-to-measure premise `P`. New nodes include: housing-cost insecurity (`HOU`, explains falling `SEC` despite growth), institutional trust (`TRUST`, a measurable proxy for `P`: insecurity → loss of trust → populism), market power/concentration (`MPWR`, the economic capture channel via markups and labor share), the effectiveness of social protection (`SPROT`), adult-learning access (`ADL`), and demographic labor scarcity (`VAC`). These 15 edges carry source citations (Eurofound, OECD, World Inequality Lab, De Loecker/Autor, etc.), visible in the map's detail panel.
+
+## V0.1 — what the loop census and the Reddit discussion added
+
+The first outside round ([r/SocialDemocracy](https://www.reddit.com/r/SocialDemocracy/comments/1u19nlw/)) and a machine-run structural analysis changed the map in five places:
+
+**Bistability instead of doom.** The census counts 178 cycles in V0.1, 148 of them self-reinforcing. Reinforcing loops are directionless — they amplify any displacement, downward and upward alike. The master loop `LK→DIST→SEC→P→LK` is now marked as feedback: the same wiring that holds the dystopia locks in as utopia once `DIST` rises. The map measures sensitivity, not probability.
+
+**The citizen-fund fork (`CFT→FUND`).** The most concrete new exit: a cash flow tax with domestic payroll deductible — a robot tax without having to define a robot; automating firms pay, employing firms shield themselves — feeds a broadly diversified citizen fund paying a universal dividend. Self-financing (bypasses `FS`), exit-resistant (domestic cash flow cannot flee), politically armored Alaska-style. Remaining lock: hegemon retaliation (`ORD→CFT`, contested).
+
+**Economic democracy (`OWN`).** Worker-owned capital cannot flee — it sidesteps the location lock. But voice isn't ownership, and mandates get arbitraged via legal-form change (SE flight). Practicable as a financed option: worker right of first refusal, buyout fund (Marcora), co-op bank.
+
+**The Bismarck thermostat (`D→Dp`) and the fourth lock (`C→FS`).** Historically, radicalization produces redistribution via elite fear (Bismarck, the New Deal, the NHS at ~250% debt-to-GDP) — for the first time the map's social system contains balancing loops (30 in V0.1 versus 2 in V0). Pulling the other way: wage-financed redistribution depends on exactly the wage base the AI chain erodes.
+
+**Counter-edges & 2026 evidence.** The distribution gate leaks (`AUT→SEC`: consumption inequality is everywhere smaller than income inequality), mass threat historically lifted distribution (`G→DIST`, Scheve/Stasavage, contested), labor scarcity pushes `DIST` upward (`VAC→DIST`). And three "contested" bright forks have become running empirics: the global minimum tax in force (side-by-side carve-out instead of collapse), CBAM live since 1 Jan 2026, SAFE/Readiness 2030 signed by 18 member states.
 
 ## Which link don't you believe?
 
