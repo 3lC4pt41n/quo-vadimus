@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quo Vadimus — Wirksystem-Karte</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --ink:#e8eaed; --muted:#9aa0aa; --line:#2a2f3a;
+    --belegt:#3ea66b; --plausibel:#d49a2a; --umstritten:#9b6bd6; --spekulativ:#c0564f;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  header{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  header h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.2px}
+  header .sub{color:var(--muted);font-size:12.5px;flex:1}
+  .langbtn{align-self:center;background:#222732;color:var(--ink);border:1px solid var(--line);
+    border-radius:7px;padding:4px 12px;font-size:12px;font-weight:650;cursor:pointer}
+  .langbtn:hover{background:#2a3140}
+  #wrap{display:flex;height:calc(100% - 53px)}
+  #stage{flex:1;position:relative;overflow:hidden;cursor:grab}
+  #stage.drag{cursor:grabbing}
+  svg{width:100%;height:100%;display:block;user-select:none}
+  .nodeBox{cursor:pointer}
+  .nodeBox rect{transition:filter .15s, stroke-width .15s}
+  .nodeBox:hover rect{filter:brightness(1.18)}
+  .nlabel{font-size:11.5px;line-height:1.18;color:var(--ink);padding:6px 8px;
+    height:100%;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:550;overflow:hidden}
+  .badge{font-size:11px;font-weight:700}
+  .edge{fill:none;stroke-width:2}
+  .ehit{fill:none;stroke:transparent;stroke-width:16;cursor:pointer}
+  .polg text{font-size:11px;font-weight:700}
+  #side{width:330px;border-left:1px solid var(--line);background:var(--panel);
+    padding:16px 18px;overflow-y:auto;font-size:13px}
+  #side h2{font-size:13px;margin:0 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:650}
+  #side .title{font-size:16px;font-weight:650;margin:2px 0 10px}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;margin:0 6px 6px 0}
+  .row{padding:10px 0;border-top:1px solid var(--line)}
+  .row .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+  .mech{font-style:italic}
+  .legend{position:absolute;left:14px;bottom:14px;background:rgba(23,26,33,.92);
+    border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--muted);max-width:250px}
+  .legend b{color:var(--ink);font-weight:600}
+  .legend .li{display:flex;align-items:center;gap:7px;margin:3px 0}
+  .sw{width:22px;height:0;border-top-width:3px;border-top-style:solid;display:inline-block}
+  .empty{color:var(--muted);font-style:italic;margin-top:8px}
+  .hint{color:var(--muted);font-size:11px;margin-top:14px;line-height:1.5}
+  kbd{background:#222732;border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:10.5px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Quo Vadimus</h1>
+  <span class="sub" id="subtitle"></span>
+  <button class="langbtn" id="langbtn" onclick="toggleLang()"></button>
+</header>
+<div id="wrap">
+  <div id="stage">
+    <svg id="svg"></svg>
+    <div class="legend" id="legend"></div>
+  </div>
+  <div id="side">
+    <h2 id="detailHead">Detail</h2>
+    <div id="detail"></div>
+  </div>
+</div>
+
+<script>
+// ====================================================================
+//  WIRKSYSTEM-DATEN — bilingual (de = Felder label/note/mech, en = le/ne/me)
+//  type: start|branch|convergence|outcome|tipping|locked|bright|premise
+//  conf: belegt|plausibel|umstritten|spekulativ   pol: "+"|"-"   loop: true
+//  Achsen: C=Präkarisierung↑ SEC=Sicherheit↑ P=Enge↑ DIST=Verteilung↑ LK=Riegel↑ GROW=Wachstum↑ ECO=Degeneration↑ FS=Budget-Enge↑
+// ====================================================================
+const NODES = {
+  A:  {x:470,y:30,  type:"start",       label:"KI-Fähigkeit bei kognitiver Routinearbeit steigt schnell", le:"AI capability at cognitive routine work rises fast", chain:1, note:"Startbedingung von Kette 1.", ne:"Starting condition of chain 1."},
+  B:  {x:470,y:150, type:"branch",      label:"Viele Mid-Level-/Office-Jobs werden obsolet", le:"Many mid-level / office jobs become obsolete", chain:1, note:"Verzweigung: verschwinden Jobs netto, oder verschieben sie sich nur?", ne:"Branch: do jobs vanish net, or merely shift?"},
+  Bs: {x:215,y:280, type:"outcome",     label:"Verschiebung in den Service-Sektor", le:"Shift into the service sector", chain:1},
+  Bm: {x:470,y:280, type:"outcome",     label:"Verschiebung ins Monitoring der KI-Systeme", le:"Shift into monitoring the AI systems", chain:1},
+  Bw: {x:730,y:280, type:"outcome",     label:"Netto-Wegfall von Stellen", le:"Net loss of positions", chain:1},
+  Au: {x:840,y:410, type:"bright",      label:"Aufwertung: knappe, gut bezahlte Aufsichtsrollen", le:"Upgrading: scarce, well-paid oversight roles", chain:1, note:"Ambivalent: knapp → konzentriert Gewinne (→DIST−); breit qualifiziert (via EDU) → Verteilung. Kein Endknoten mehr.", ne:"Ambivalent: scarce → concentrates gains (→DIST−); broadly trained (via EDU) → distribution. No longer a dead end."},
+  C:  {x:470,y:410, type:"convergence", label:"Präkarisierung vieler Angestellter und Arbeiter", le:"Precarization of many salaried employees and workers", chain:1, note:"Konvergenzknoten: Service, Wegfall, Steuer-Kette, Fiskal-Kette und das Verteilungstor laufen hier zusammen; zugleich Verzweigung (D vs. Dp). Pointe: das historisch NEUE ist, dass die Welle die ANGESTELLTE Mitte (Sachbearbeitung/Office) erfasst — der Einstieg. Über den Service-Pfad (Bs→C) landen hier aber auch Menschen in Arbeiter-typischer Prekarität.", ne:"Convergence node: service, redundancy, the tax chain, the fiscal chain and the distribution gate all meet here; also a branch (D vs. Dp). Point: the historically NEW thing is that the wave hits the SALARIED middle (clerical/office) — the entry. Via the service path (Bs→C) people also land in worker-type precarity."},
+  Dp: {x:730,y:540, type:"locked",      label:"Umverteilung/Absicherung → Stabilisierung", le:"Redistribution/protection → stabilization", chain:1, note:"Der helle Pfad. Aus DREI Richtungen verriegelt: Wettbewerb (LK), Steuerwettbewerb, fehlendes Geld (FS). Würde, wenn er zündete, C dämpfen.", ne:"The bright path. Locked from THREE directions: competition (LK), tax competition, lack of money (FS). Would, if it fired, dampen C."},
+  D:  {x:470,y:540, type:"outcome",     label:"Radikalisierung der Ränder (links & rechts)", le:"Radicalization of the fringes (left & right)", chain:1, note:"Dieselbe Präkarisierung, zwei Deutungen: „die da oben/das Kapital“ (links) vs. „Migranten/Eliten/Brüssel“ (rechts).", ne:"The same precarization, two readings: 'those at the top/capital' (left) vs. 'migrants/elites/Brussels' (right)."},
+  E:  {x:470,y:680, type:"outcome",     label:"Renationalisierung — Abkehr von Europa", le:"Renationalization — turning away from Europe", chain:1, note:"Anti-supranationale Stoßrichtung ist Programmkern der Rechtsparteien — Konvergenz über viele Akteure.", ne:"Anti-supranational thrust is the programmatic core of the right parties — convergence across many actors."},
+  T1: {x:30, y:410, type:"tipping",     label:"★ Kipp: Anteil Aufwertung vs. Service/Wegfall", le:"★ Tipping: share of upgrading vs. service/redundancy", chain:1, note:"Hoher Aufwertungsanteil → weniger Präkarisierung.", ne:"A high upgrading share lowers precarization."},
+  T2: {x:30, y:560, type:"tipping",     label:"★ Kipp: Absicherung OHNE Wettbewerbsverlust möglich?", le:"★ Tipping: protection possible WITHOUT losing competitiveness?", chain:1, note:"Fällt mit T3/DIST zu EINER Frage zusammen: lässt sich Absicherung finanzieren, ohne den Standort zu fressen?", ne:"Collapses with T3/DIST into one question: can protection be financed without eating the location's competitiveness?"},
+
+  S2:  {x:1180,y:30,  type:"start",       label:"Faktor-Fehlbepreisung: Arbeit hoch besteuert, Energie subventioniert, Ressourcen niedrig", le:"Factor mispricing: labor taxed high, energy subsidized, resources taxed low", chain:2, note:"Startbedingung Kette 2 — unabhängig.", ne:"Starting condition chain 2 — independent."},
+  L:   {x:1180,y:165, type:"outcome",     label:"Arbeit wird teuer (hoher Steuerkeil)", le:"Labor becomes expensive (high tax wedge)", chain:2},
+  J:   {x:1040,y:300, type:"outcome",     label:"Weniger Arbeitsplätze entstehen", le:"Fewer jobs are created", chain:2, note:"Läuft in den Konvergenzknoten C.", ne:"Runs into the convergence node C."},
+  R:   {x:1320,y:300, type:"outcome",     label:"Ressourcenverschwendung — externe Kosten unbepreist", le:"Resource waste — external costs unpriced", chain:2, note:"Sammelt aus drei Quellen: Steuer, Geopolitik, Wachstum.", ne:"Collects from three sources: tax, geopolitics, growth."},
+  LK:  {x:1180,y:445, type:"convergence", label:"Standortwettbewerb verriegelt nationale Alleingänge", le:"Locational competition bolts shut national go-it-alone moves", chain:2, note:"META-KONVERGENZ: derselbe Riegel blockiert Umverteilung (Dp) UND drückt die Verteilung (DIST−). Robustester Attraktor.", ne:"META-CONVERGENCE: the same lock blocks redistribution (Dp) AND pushes distribution down (DIST−). The most robust attractor."},
+  T3:  {x:1180,y:600, type:"tipping",     label:"★ Kipp: supranationale Koordination — ja/nein?", le:"★ Tipping: supranational coordination — yes/no?", chain:2, note:"Öffnet oder hält den Riegel. Kette 1s Renationalisierung (E) und die Machtordnung (ORD) drücken sie auf „Nein“.", ne:"Opens or holds the lock. Chain 1's renationalization (E) and the power order (ORD) push it to 'no'."},
+
+  P:   {x:560, y:850, type:"premise",  label:"Mensch = Organismus, gedeiht zuerst selbst — moralischer Kreis in konzentrischen Ringen (Ich→Familie→Community→Land→Welt)", le:"Human = organism, thrives itself first — moral circle in concentric rings (self→family→community→country→world)", chain:0, note:"PRÄMISSE / Substrat. Begründet C→D, E, ORD und warum die Riegel halten. Gegenkraft = kantischer Universal, konditional auf Sicherheit (SEC).", ne:"PREMISE / substrate. Grounds C→D, E, ORD and why the locks hold. Counterforce = Kantian universal, conditional on security (SEC)."},
+  SEC: {x:150, y:720, type:"tipping",  label:"★ Wahrgenommene Sicherheit / Überfluss → Radius des moralischen Kreises", le:"★ Perceived security / abundance → radius of the moral circle", chain:0, note:"Regler UNTER der Politik. Hoch → Kreis weit (P sinkt). Gespeist (+) von Wachstum, Fortschritt, Verteilung; gesenkt (−) von Präkarisierung und Degeneration.", ne:"Regulator beneath the politics. High → wide circle (P falls). Fed (+) by growth, progress, distribution; lowered (−) by precarization and degeneration."},
+
+  G:    {x:760, y:990,  type:"start",       label:"Rückkehr der Machtpolitik: Russland/Ukraine, „America first“, China/Taiwan, Aufrüstung, Musk/Mars", le:"Return of power politics: Russia/Ukraine, 'America first', China/Taiwan, rearmament, Musk/Mars", chain:3, note:"Startbedingung Kette 3 — unabhängig.", ne:"Starting condition chain 3 — independent."},
+  BLOC: {x:340, y:1110, type:"bright",       label:"Äußere Bedrohung weitet den Kreis: „Europa als Block“ → Verteidigungsunion/Integration", le:"External threat widens the circle: 'Europe as a bloc' → defense union/integration", chain:3, note:"Heller Gegen-Fork — kann ebenso national zersplittern. Umstritten.", ne:"Bright counter-fork — could equally splinter nationally. Contested."},
+  ORD:  {x:640, y:1110, type:"convergence",  label:"Ordnung verschiebt sich: regelbasiert → machtbasiert", le:"Order shifts: rule-based → power-based", chain:3, note:"Dreifach: senkt T3 (Koordination unmöglich), drückt DIST (Stärke statt Regeln → Kaperung), = Prämisse P auf Staatsebene, öffnet die Systemfrage.", ne:"Threefold: lowers T3 (coordination impossible), pushes DIST (strength over rules → capture), = premise P at state scale, opens the system question."},
+  RES:  {x:980, y:1110, type:"outcome",      label:"Ressourcen-Fehlallokation: Rüstung & Prestige statt nachhaltiger Entwicklung", le:"Resource misallocation: arms & prestige instead of sustainable development", chain:3, note:"Konvergiert mit der ökologischen Fehlbepreisung R.", ne:"Converges with the ecological mispricing R."},
+  SYS:  {x:640, y:1245, type:"branch",       label:"Systemfrage: Demokratie vs. Autokratie (Partei / König / Geld)", le:"System question: democracy vs. autocracy (party / king / money)", chain:3, note:"Verzweigung des Regimetyps. Autokratie → Macht-/Vermögenskonzentration → Kaperung (→DIST−); Demokratie hält Verteilung offen. Wirkt direkt auf den Master-Schalter.", ne:"Branch of regime type. Autocracy → power/wealth concentration → capture (→DIST−); democracy keeps distribution open. Acts directly on the master switch."},
+
+  S4:  {x:-340, y:520, type:"start",   label:"Zunehmende Staatsverschuldung", le:"Rising public debt", chain:4, note:"Startbedingung Kette 4 — unabhängig.", ne:"Starting condition chain 4 — independent."},
+  WZ:  {x:-340, y:390, type:"outcome", label:"Wachstumszwang (Druck: g muss r schlagen)", le:"Growth imperative (pressure: g must beat r)", chain:4, note:"Der DRUCK aus den Schulden — nicht das Ergebnis. Begünstigt Kapital/Austerität → tendiert zur Kaperung (→DIST−).", ne:"The PRESSURE from debt — not the result. Favors capital/austerity → tends toward capture (→DIST−)."},
+  GROW:{x:-110, y:470, type:"outcome", label:"Tatsächliches Wachstum (Ergebnis)", le:"Actual growth (outcome)", chain:4, note:"Getrennt vom Zwang: hängt an produktiver Schuld (INV) und Produktivitätsüberschuss (AUT). Erfüllt → SEC↑, dämpft C; frisst aber Ressourcen (→R). Von Degeneration & Demografie gesenkt.", ne:"Separate from the imperative: depends on productive debt (INV) and the productivity surplus (AUT). If met → SEC↑, dampens C; but eats resources (→R). Lowered by degeneration & demographics."},
+  FS:  {x:-340, y:660, type:"outcome", label:"Weniger fiskalischer Spielraum (Zinslast bindet Budget)", le:"Less fiscal room (interest burden binds the budget)", chain:4, note:"Dritter, unabhängiger Riegel am hellen Pfad Dp — diesmal: kein Geld.", ne:"Third, independent lock on the bright path Dp — this time: no money."},
+  INV: {x:-590, y:520, type:"branch",  label:"Produktive Schuld (investieren) vs. konsumtive Schuld (alimentieren)", le:"Productive debt (investing) vs. consumptive debt (subsidizing)", chain:4, note:"Konkretester heller Fork: produktiv → Wachstum → Positivsumme → Ausweg. Konsumtiv → Last ohne Gegenwert.", ne:"Most concrete bright fork: productive → growth → positive-sum → exit. Consumptive → burden without return."},
+  DEM: {x:-600, y:700, type:"start",   label:"Demografie: alternde, schrumpfende Erwerbsbevölkerung", le:"Demographics: aging, shrinking workforce", chain:7, note:"Unabhängige Kette UND Anti-Doom-Gegenkraft: treibt Schulden (S4↑) und senkt Wachstum (GROW−) — dämpft aber den Job-Wegfall (B−), weil Automation eine demografische Lücke füllt statt zu verdrängen.", ne:"Independent chain AND anti-doom counterforce: drives debt (S4↑) and lowers growth (GROW−) — but dampens job loss (B−), because automation fills a demographic gap instead of displacing."},
+
+  ECO:  {x:1330, y:470, type:"convergence", label:"Ökologische Degeneration (Klima, Biodiversität, Degradation)", le:"Ecological degeneration (climate, biodiversity, degradation)", chain:5, note:"Kein Endpunkt, sondern MOTOR: speist drei Rückkopplungen — SEC↓, D (Klimamigration), GROW↓ (Kapitalzerstörung). Zweiter Treiber des Attraktors.", ne:"Not an endpoint but an ENGINE: feeds three feedbacks — SEC↓, D (climate migration), GROW↓ (capital destruction). The second driver of the attractor."},
+  ECOc: {x:1580, y:470, type:"bright",       label:"Klima als gemeinsamer Feind → planetare Kooperation (weiter Kreis)", le:"Climate as common enemy → planetary cooperation (wide circle)", chain:5, note:"Heller Fork — asymmetrisch gebremst: Klima ist langsam/diffus → liest sich als Knappheit, nicht als akuter Feind.", ne:"Bright fork — asymmetrically braked: climate is slow/diffuse → reads as scarcity, not as an acute enemy."},
+
+  SOZ:  {x:230, y:600, type:"convergence", label:"Soziale Erosion (Armutsgefühl, Obdachlosigkeit, Perspektivlosigkeit, Vandalismus, Kriminalität)", le:"Social erosion (felt poverty, homelessness, hopelessness, vandalism, crime)", chain:8, note:"SOZIALE EXTERNALITÄT — der Zwilling der ökologischen (ECO). Materialisiert die Präkarisierung im Alltag und spillt als Verfall/Kriminalität auf ALLE über. Armutsgefühl/Perspektivlosigkeit = subjektiver Kern (direkt niedriges SEC); Vandalismus/Kriminalität = die Externalität, die fremdes SEC senkt.", ne:"SOCIAL EXTERNALITY — the twin of the ecological one (ECO). Materializes precarization in daily life and spills over as decay/crime onto EVERYONE. Felt poverty/hopelessness = subjective core (directly low SEC); vandalism/crime = the externality that lowers others' SEC."},
+
+  AUT:  {x:190,  y:30,  type:"bright",       label:"Automation → Produktivitätsüberschuss", le:"Automation → productivity surplus", chain:6, note:"JANUS-Gesicht von A. Speist den potenziellen Wohlstand (SURP) UND das tatsächliche Wachstum (GROW).", ne:"Janus face of A. Feeds both potential prosperity (SURP) and actual growth (GROW)."},
+  EDU:  {x:-60,  y:30,  type:"bright",       label:"KI-Bildung: personalisierte Qualifizierung in der Breite", le:"AI education: personalized upskilling at scale", chain:6, note:"Hebt die Verteilung direkt (→DIST+) und kippt den Aufwertungspfad (→Au).", ne:"Raises distribution directly (→DIST+) and tips the upgrading path (→Au)."},
+  MED:  {x:-310, y:30,  type:"bright",       label:"Technischer & medizinischer Fortschritt: Lebensqualität↑, Kosten↓", le:"Technical & medical progress: quality of life↑, costs↓", chain:6, note:"Hebt die Basis-Sicherheit direkt → SEC.", ne:"Raises baseline security directly → SEC."},
+  SURP: {x:-310, y:165, type:"convergence",  label:"Potenzieller Überschuss: Produktivität + Wissen + Gesundheit", le:"Potential surplus: productivity + knowledge + health", chain:6, note:"Heller Konvergenzknoten — die Masse, die überhaupt verteilt werden kann. Erreicht SEC nur durch das Verteilungstor DIST.", ne:"Bright convergence node — the mass that can be distributed at all. Reaches SEC only through the distribution gate DIST."},
+  DIST: {x:-310, y:300, type:"tipping",      label:"★ Verteilungsgrad: breit verteilter vs. gekaperter Überschuss", le:"★ Degree of distribution: broadly distributed vs. captured surplus", chain:6, note:"DIE Master-Kipp-Variable, sitzt VOR SEC — jetzt verkabelt. Gesenkt (−) durch Riegel (LK), Machtordnung (ORD), Steuer-Fehlbepreisung (S2), konzentrierte Aufwertung (Au), Autokratie (SYS), Wachstumszwang (WZ). Gehoben (+) durch breite KI-Bildung (EDU) und den Überschuss (SURP). Hoch → SEC↑ → Utopie; niedrig → Überfluss OHNE Sicherheit → Dystopie.", ne:"THE master tipping variable, sits BEFORE SEC — now wired. Lowered (−) by the lock (LK), power order (ORD), tax mispricing (S2), concentrated upgrading (Au), autocracy (SYS), growth imperative (WZ). Raised (+) by broad AI education (EDU) and the surplus (SURP). High → SEC↑ → utopia; low → abundance WITHOUT security → dystopia."},
+
+  // ---- Empirische Mediatoren (Deep-Research-Memo, Beleg-Tags K01-K18) ----
+  HOU:  {x:-120,y:880, type:"outcome", label:"Wohnkosten- & Wohnungsunsicherheit", le:"Housing cost & housing insecurity", chain:9, note:"MEDIATOR (Eurofound): Wohnkostenlast senkt SEC auch bei Beschäftigung und verstärkt die soziale Erosion. Erklärt, warum SEC selbst bei Wachstum fällt. Messbar über Housing-cost overburden.", ne:"MEDIATOR (Eurofound): housing-cost burden lowers SEC even when employed and amplifies social erosion. Explains why SEC falls even amid growth. Measurable via housing-cost overburden."},
+  SPROT:{x:-360,y:880, type:"bright",  label:"Wirksamkeit sozialer Sicherung", le:"Effectiveness of social protection", chain:9, note:"Macht aus dem Wunsch nach staatlicher Hilfe einen messbaren Mechanismus: verlässliche Sicherung → weniger existenzielle Schocks → SEC. Gespeist vom fiskalischen Spielraum (FS).", ne:"Turns the wish for state help into a measurable mechanism: reliable protection → fewer existential shocks → SEC. Fed by fiscal room (FS)."},
+  TRUST:{x:120, y:1000,type:"outcome", label:"Institutionelles Vertrauen", le:"Institutional trust", chain:9, note:"Beobachtbarer Proxy für das Substrat P: ökonomische Sicherheit → Vertrauen → weniger Nachfrage nach Abschottung/Populismus. Reduziert die Abhängigkeit von der unmessbaren Prämisse P (Guiso et al.).", ne:"Observable proxy for the substrate P: economic security → trust → less demand for closure/populism. Reduces dependence on the unmeasurable premise P (Guiso et al.)."},
+  MPWR: {x:-620,y:300, type:"outcome", label:"Marktmacht & Konzentration (Markups, Lohnquote)", le:"Market power & concentration (markups, labor share)", chain:9, note:"Der ökonomische Capture-Kanal, der DIST bislang fehlte: steigende Markups & Superstar-Firmen drücken die Lohnquote → Überschuss wandert zu Kapital. Härtester Verteilungsbeleg (De Loecker; Autor).", ne:"The economic capture channel DIST lacked: rising markups & superstar firms depress the labor share → surplus shifts to capital. The hardest distributional evidence (De Loecker; Autor)."},
+  PLAT: {x:-620,y:165, type:"outcome", label:"Plattform-Gatekeeper-Macht", le:"Platform gatekeeper power", chain:9, note:"Digitale Spezifikation von Marktmacht: Netzwerkeffekte, Datenakkumulation, Lock-in, Tipping → Gatekeeper. Speist MPWR.", ne:"Digital specification of market power: network effects, data accumulation, lock-in, tipping → gatekeepers. Feeds MPWR."},
+  ADL:  {x:175, y:160, type:"bright",  label:"Erwachsenenlernen & Reskilling-Zugang", le:"Adult learning & reskilling access", chain:9, note:"Der im KI-/Demografie-Kontext entscheidende Bildungskanal — und ungleich verteilt: Höherqualifizierte nehmen weit häufiger teil. Breiter Zugang → breitere Diffusion (DIST↑), weniger Verdrängung (C↓).", ne:"The education channel that matters most under AI/demographics — and unequally distributed: the higher-skilled participate far more. Broad access → broader diffusion (DIST↑), less displacement (C↓)."},
+  VAC:  {x:-850,y:560, type:"bright",  label:"Arbeitskräfteknappheit (offene Stellen)", le:"Labor scarcity (vacancies)", chain:9, note:"Operationalisiert die helle demografische Gabel: 2025 als Wendepunkt von Job- zu Arbeitskräftemangel. Technik füllt Lücken (C↓), Knappheit treibt Adoption (AUT↑) — aber kein „silver bullet“ (OECD).", ne:"Operationalizes the bright demographic fork: 2025 as the turning point from job shortage to labor shortage. Tech fills gaps (C↓), scarcity drives adoption (AUT↑) — but no “silver bullet” (OECD)."}
+};
+const EDGES = [
+  {f:"A", t:"B",  conf:"plausibel", pol:"+", mech:"KI erledigt regelbasierte Wissensarbeit billiger/schneller als ein bezahlter Mensch → Arbeitgeber substituiert. Gegenthese: historisch baut Automation Jobs um statt sie zu vernichten (ATMs → mehr Bankangestellte).", me:"AI does rule-based knowledge work cheaper/faster than a paid human → employers substitute. Counter-thesis: historically automation rebuilds jobs rather than destroying them (ATMs → more bank tellers)."},
+  {f:"B", t:"Bs", conf:"plausibel", pol:"+", mech:"Verdrängte Office-Arbeit wandert in schwer automatisierbare personennahe Dienste.", me:"Displaced office work moves into hard-to-automate person-centered services."},
+  {f:"B", t:"Bm", conf:"plausibel", pol:"+", mech:"Modelle brauchen Aufsicht, Korrektur, Haftung → ein Teil wird Kurator/Monitor.", me:"Models need oversight, correction, liability → some become curators/monitors."},
+  {f:"B", t:"Bw", conf:"plausibel", pol:"+", mech:"Keine gleichwertige Nachfrage rückt nach → ein Teil fällt netto weg.", me:"No equivalent demand follows → some positions are lost net."},
+  {f:"Bs",t:"C",  conf:"belegt",    pol:"+", mech:"Service-Jobs sind schlechter bezahlt, unsicherer, schwächer organisiert → Lohndruck durch Zustrom Verdrängter.", me:"Service jobs are worse paid, less secure, weakly organized → wage pressure from the influx of the displaced."},
+  {f:"Bw",t:"C",  conf:"plausibel", pol:"+", mech:"Arbeitslosigkeit/Unterbeschäftigung senkt die Verhandlungsmacht der Arbeit.", me:"Unemployment/underemployment lowers labor's bargaining power."},
+  {f:"Bm",t:"Au", conf:"plausibel", pol:"+", mech:"Aufsicht über KI ist knapp und gut bezahlt → für wenige eine Aufwertung statt Abstieg.", me:"Oversight of AI is scarce and well paid → for a few an upgrade instead of a descent."},
+  {f:"C", t:"D",  conf:"belegt",    pol:"+", mech:"Ökonomische Unsicherheit + Gefühl, vom Mainstream nicht geschützt zu werden → Abwendung von der Mitte. Empirisch gut gestützt (Strukturbruch-Regionen kippen messbar zu Populisten).", me:"Economic insecurity + feeling unprotected by the mainstream → turning away from the center. Empirically well supported (structural-break regions measurably tip to populists)."},
+  {f:"C", t:"Dp", conf:"plausibel", pol:"+", mech:"Präkarisierung erzeugt den DRUCK nach Schutz/Umverteilung (Dp). Ob der Pfad zündet, entscheiden die Riegel LK und FS — nicht dieser Wunsch.", me:"Precarization creates the PRESSURE for protection/redistribution (Dp). Whether the path fires is decided by the locks LK and FS — not by this wish."},
+  {f:"Dp",t:"C",  conf:"plausibel", pol:"-", mech:"GEGENKRAFT (unterdrückt): gelänge Stabilisierung durch Umverteilung, dämpfte sie die Präkarisierung. Der helle Pfad — dreifach verriegelt.", me:"COUNTERFORCE (suppressed): if stabilization through redistribution succeeded, it would dampen precarization. The bright path — locked threefold."},
+  {f:"D", t:"E",  conf:"belegt",    pol:"+", mech:"Die Ränder sind souveränistisch; EU-Skepsis ist Programmkern → Renationalisierung. Dämpfer: Regierungsverantwortung zähmt die Anti-EU-Rhetorik (Meloni).", me:"The fringes are sovereigntist; EU skepticism is programmatic core → renationalization. Damper: governing responsibility tames the anti-EU rhetoric (Meloni)."},
+  {f:"E", t:"C",  conf:"plausibel", pol:"+", loop:true, mech:"RÜCKKOPPLUNG: Renationalisierung → kleinere Märkte, Handelsreibung → geringere Wettbewerbsfähigkeit → mehr Druck → mehr Präkarisierung. Selbsttragender Kreis.", me:"FEEDBACK: renationalization → smaller markets, trade friction → lower competitiveness → more pressure → more precarization. Self-sustaining cycle."},
+  {f:"T1",t:"C",  conf:"plausibel", pol:"-", mech:"Kipp-Variable: ein hoher Aufwertungsanteil senkt die Präkarisierung.", me:"Tipping variable: a high upgrading share lowers precarization."},
+  {f:"T2",t:"Dp", conf:"plausibel", pol:"+", mech:"Kipp-Variable: ist Absicherung ohne Wettbewerbsverlust machbar, zündet der Stabilisierungspfad Dp.", me:"Tipping variable: if protection without competitiveness loss is feasible, the stabilization path Dp fires."},
+
+  {f:"S2",t:"L",  conf:"belegt",    pol:"+", mech:"Steuerkeil auf Lohn gehört zu den höchsten der OECD → Arbeit ist im internationalen Vergleich teuer.", me:"The tax wedge on labor is among the highest in the OECD → labor is expensive by international comparison."},
+  {f:"L", t:"J",  conf:"umstritten",pol:"+", mech:"Hoher Lohnkostenkeil → weniger Einstellungen / mehr Automation. Gegenbefund: Deutschland hat trotz hohem Keil niedrige Arbeitslosigkeit — Elastizität umkämpft.", me:"High labor-cost wedge → fewer hires / more automation. Counter-finding: Germany has low unemployment despite a high wedge — elasticity contested."},
+  {f:"J", t:"C",  conf:"plausibel", pol:"+", mech:"KONVERGENZ: weniger Arbeitsplätze → mehr Unterbeschäftigung → Präkarisierung. Zweite unabhängige Kette, selber Knoten.", me:"CONVERGENCE: fewer jobs → more underemployment → precarization. A second independent chain, same node."},
+  {f:"L", t:"B",  conf:"plausibel", pol:"+", mech:"VERSTÄRKER zwischen den Ketten: teure Arbeit erhöht den Anreiz, durch KI zu substituieren → hebelt A→B hoch.", me:"AMPLIFIER between chains: expensive labor raises the incentive to substitute via AI → levers up A→B."},
+  {f:"S2",t:"R",  conf:"belegt",    pol:"+", mech:"Subventionierte Energie + niedrig besteuerter Ressourcenverbrauch = unterbepreiste Externalität → Überkonsum/Verschwendung.", me:"Subsidized energy + lightly taxed resource use = underpriced externality → overconsumption/waste."},
+  {f:"S2",t:"LK", conf:"plausibel", pol:"+", mech:"Unilaterale Korrektur der Fehlbepreisung verteuert den Standort → Reform unterbleibt → Riegel hält.", me:"Unilateral correction of the mispricing raises location costs → reform is foregone → the lock holds."},
+  {f:"S2",t:"DIST",conf:"plausibel",pol:"-", mech:"MASTER-SCHALTER: Arbeit hoch, Kapital/Ressourcen niedrig besteuert → begünstigt Kapitaleigner → drückt die Verteilung Richtung Kaperung.", me:"MASTER SWITCH: labor taxed high, capital/resources low → favors capital owners → pushes distribution toward capture."},
+  {f:"LK",t:"Dp", conf:"belegt",    pol:"-", mech:"QUERVERBINDUNG: der Standortwettbewerbs-Riegel blockiert den Umverteilungspfad Dp. Beide Ketten scheitern an derselben Stelle.", me:"CROSS-LINK: the locational-competition lock also blocks the redistribution path Dp. Both chains fail at the same spot."},
+  {f:"LK",t:"DIST",conf:"plausibel",pol:"-", mech:"MASTER-SCHALTER: hält der Riegel (keine Koordination), bleibt Verteilung Stückwerk → Kaperung. Hier wird die Kernthese im Graph GESCHLOSSEN, nicht behauptet.", me:"MASTER SWITCH: if the lock holds (no coordination), distribution stays piecemeal → capture. Here the core thesis is CLOSED in the graph, not asserted."},
+  {f:"E", t:"LK", conf:"plausibel", pol:"+", mech:"QUERVERBINDUNG: Renationalisierung zerstört die supranationale Ebene → der Riegel verfestigt sich.", me:"CROSS-LINK: renationalization destroys the supranational level → the lock entrenches."},
+  {f:"T3",t:"LK", conf:"plausibel", pol:"-", mech:"Kipp-Variable: gelingt Koordination oberhalb der Nation (OECD-Mindeststeuer als Präzedenz), öffnet sich der Riegel.", me:"Tipping variable: if coordination above the nation succeeds (OECD minimum tax as precedent), the lock opens."},
+
+  {f:"P", t:"D",  conf:"plausibel", pol:"+", mech:"SUBSTRAT: Unter Druck zieht der Mensch den moralischen Kreis nach innen — „erst wir“. Erklärt, warum Präkarisierung zu Abschottung wird statt zu Solidarität.", me:"SUBSTRATE: under pressure the human pulls the moral circle inward — 'us first'. Explains why precarization becomes closure rather than solidarity."},
+  {f:"P", t:"E",  conf:"plausibel", pol:"+", mech:"SUBSTRAT: Renationalisierung IST die konzentrische Kontraktion — der Kreis schrumpft von Welt/Europa auf Land.", me:"SUBSTRATE: renationalization IS the concentric contraction — the circle shrinks from world/Europe to country."},
+  {f:"P", t:"LK", conf:"plausibel", pol:"+", mech:"SUBSTRAT: In-group-Präferenz macht supranationale Koordination unnatürlich → der Riegel hält.", me:"SUBSTRATE: in-group preference makes supranational coordination unnatural → the lock holds."},
+  {f:"SEC",t:"P", conf:"plausibel", pol:"-", mech:"REGLER: hohe Sicherheit/Überfluss WEITET den Kreis (senkt die Enge P); Knappheit verengt ihn. Der kantische Universal als Gegenkraft — konditional auf Sicherheit.", me:"REGULATOR: high security/abundance WIDENS the circle (lowers narrowness P); scarcity narrows it. The Kantian universal as counterforce — conditional on security."},
+  {f:"C", t:"SEC",conf:"plausibel", pol:"-", loop:true, mech:"TIEFSTE SCHLEIFE: Präkarisierung SENKT die wahrgenommene Sicherheit → verengt den Kreis (P↑) → Abschottung → mehr Knappheit → mehr Präkarisierung.", me:"DEEPEST LOOP: precarization LOWERS perceived security → narrows the circle (P↑) → closure → more scarcity → more precarization."},
+
+  {f:"G",  t:"ORD", conf:"belegt",    pol:"+", mech:"Großmächte handeln nach Stärke statt nach Institutionen → Erosion der regelbasierten Ordnung.", me:"Great powers act by strength rather than institutions → erosion of the rule-based order."},
+  {f:"G",  t:"RES", conf:"plausibel", pol:"+", mech:"Rüstungswettlauf + Prestigeprojekte binden Kapital und Talent → fehlen für nachhaltige Entwicklung.", me:"Arms race + prestige projects bind capital and talent → missing for sustainable development."},
+  {f:"G",  t:"BLOC",conf:"umstritten",pol:"+", mech:"Äußere Bedrohung KANN Kohäsion erzeugen: gemeinsamer Feind → „Europa als Block“. Hoffnungsvoll und umstritten — kann ebenso fragmentieren.", me:"External threat CAN create cohesion: common enemy → 'Europe as a bloc'. Hopeful and contested — can equally fragment."},
+  {f:"RES",t:"R",   conf:"plausibel", pol:"+", mech:"KONVERGENZ: geopolitische Fehlallokation trifft die ökologische Fehlbepreisung — dieselbe Verschwendung aus zwei Quellen.", me:"CONVERGENCE: geopolitical misallocation meets the ecological mispricing — the same waste from two sources."},
+  {f:"ORD",t:"T3",  conf:"belegt",    pol:"-", mech:"KONVERGENZ (3. Kette): machtbasierte Ordnung macht regelbasierte Koordination unmöglich → T3 sinkt → Master-Schalter überdeterminiert.", me:"CONVERGENCE (3rd chain): power-based order makes rule-based coordination impossible → T3 falls → master switch overdetermined."},
+  {f:"ORD",t:"DIST",conf:"plausibel", pol:"-", mech:"MASTER-SCHALTER: in einer Machtordnung setzt sich Stärke durch, nicht geteilte Regeln → Verteilung kippt zur Kaperung.", me:"MASTER SWITCH: in a power order strength prevails, not shared rules → distribution tips to capture."},
+  {f:"P",  t:"ORD", conf:"plausibel", pol:"+", mech:"SUBSTRAT auf Makroebene: „first“-Politik der Staaten = konzentrischer Kreis auf Staatsebene. P wiederholt sich im großen Maßstab.", me:"SUBSTRATE at the macro scale: 'first' politics of states = concentric circle at state level. P repeats on the large scale."},
+  {f:"ORD",t:"SYS", conf:"belegt",    pol:"+", mech:"Machtbasierte Ordnung begünstigt Zentralisierung & Stärke → die Systemfrage wird offen gestellt.", me:"Power-based order favors centralization & strength → the system question is opened."},
+  {f:"SYS",t:"DIST",conf:"umstritten",pol:"-", mech:"MASTER-SCHALTER (Sackgasse geschlossen): Autokratie konzentriert Macht/Vermögen → Kaperung; Demokratie hält Verteilung offen. Vorzeichen umstritten — auch Autokratien können umverteilen.", me:"MASTER SWITCH (dead end closed): autocracy concentrates power/wealth → capture; democracy keeps distribution open. Sign contested — autocracies can redistribute too."},
+  {f:"BLOC",t:"LK", conf:"umstritten",pol:"-", mech:"GEGEN-FORK: europäische Integration unter Druck wäre ein Stück Koordination → könnte den Riegel öffnen. Umstritten — Aufrüstung kann ebenso national zersplittern.", me:"COUNTER-FORK: European integration under pressure would be a piece of coordination → could open the lock. Contested — rearmament can equally splinter nationally."},
+
+  {f:"S4", t:"WZ", conf:"belegt",    pol:"+", mech:"Schulden bleiben nur tragbar, wenn die Wirtschaft schneller wächst als die Zinslast (g > r) → Wachstumszwang.", me:"Debt stays sustainable only if the economy grows faster than the interest burden (g > r) → growth imperative."},
+  {f:"S4", t:"FS", conf:"belegt",    pol:"+", mech:"Zinslast und Tilgung binden das Budget → weniger Spielraum für Investition/Alimentierung.", me:"Interest and amortization bind the budget → less room for investment/subsidy."},
+  {f:"S4", t:"INV",conf:"plausibel", pol:"+", mech:"Die Schuld kann produktiv (investiv) oder konsumtiv verwendet werden — Verzweigung, die über Wachstum entscheidet.", me:"The debt can be used productively (investment) or consumptively — a branch that decides about growth."},
+  {f:"INV",t:"GROW",conf:"umstritten",pol:"+", mech:"HELLER FORK: produktive Schuld (Investition in Produktivität/Energie/Bildung) ERZEUGT Wachstum → Positivsumme. Konsumtive nicht. Multiplikator produktiver Schulden ist umstritten.", me:"BRIGHT FORK: productive debt (investment in productivity/energy/education) GENERATES growth → positive-sum. Consumptive does not. The multiplier of productive debt is contested."},
+  {f:"AUT",t:"GROW",conf:"plausibel", pol:"+", mech:"BRÜCKE hell↔Motor: der Produktivitätsüberschuss aus Automation IST eine Quelle tatsächlichen Wachstums.", me:"BRIDGE bright↔engine: the productivity surplus from automation IS a source of actual growth."},
+  {f:"WZ", t:"DIST",conf:"plausibel", pol:"-", mech:"MASTER-SCHALTER: der Wachstumszwang unter Schulden begünstigt Kapital/Austerität (Lohnzurückhaltung, Standortpflege) → drückt die Verteilung zur Kaperung.", me:"MASTER SWITCH: the growth imperative under debt favors capital/austerity (wage restraint, location care) → pushes distribution toward capture."},
+  {f:"GROW",t:"SEC",conf:"plausibel", pol:"+", mech:"Erfülltes Wachstum = Positivsummen-Überfluss → hebt die wahrgenommene Sicherheit → weiter Kreis. Der ökonomische Motor unter SEC.", me:"Met growth = positive-sum abundance → raises perceived security → wider circle. The economic engine beneath SEC."},
+  {f:"GROW",t:"R", conf:"plausibel", pol:"+", mech:"Wachstum frisst Ressourcen → kollidiert mit Nachhaltigkeit (die Kehrseite des Motors).", me:"Growth eats resources → collides with sustainability (the flip side of the engine)."},
+  {f:"GROW",t:"C", conf:"plausibel", pol:"-", mech:"Wachstum macht Verteilung zum Positivsummenspiel → entschärft den Verteilungskonflikt → dämpft Präkarisierung.", me:"Growth makes distribution a positive-sum game → defuses the distributional conflict → dampens precarization."},
+  {f:"ECO",t:"GROW",conf:"plausibel",pol:"-", mech:"Klimaschäden zerstören Kapital und Produktivität → untergraben das Wachstum, das die Schuldenfalle entschärfen müsste.", me:"Climate damage destroys capital and productivity → undermines the growth that should defuse the debt trap."},
+  {f:"FS", t:"Dp", conf:"belegt",    pol:"-", mech:"DRITTER RIEGEL: selbst bei politischem Willen kein Geld → Umverteilung scheitert fiskalisch. Dp aus drei Richtungen verriegelt.", me:"THIRD LOCK: even with political will, no money → redistribution fails fiscally. Dp locked from three directions."},
+  {f:"FS", t:"C",  conf:"plausibel", pol:"+", mech:"Der Staat kann Präkarisierte nicht abfedern → verschärft die Präkarisierung direkt.", me:"The state cannot cushion the precarized → worsens precarization directly."},
+
+  {f:"DEM",t:"S4", conf:"belegt",    pol:"+", mech:"Alterung → steigende Renten-/Gesundheitslasten bei schrumpfender Beitragsbasis → höhere Verschuldung.", me:"Aging → rising pension/health burdens on a shrinking contribution base → higher debt."},
+  {f:"DEM",t:"GROW",conf:"plausibel",pol:"-", mech:"Schrumpfende Erwerbsbevölkerung senkt das Potenzialwachstum → verschärft den Wachstumszwang.", me:"A shrinking workforce lowers potential growth → sharpens the growth imperative."},
+  {f:"DEM",t:"B",  conf:"plausibel", pol:"-", mech:"ANTI-DOOM-GEGENKRAFT: die schrumpfende Belegschaft lässt eine Lücke, die Automation FÜLLT statt zu verdrängen → dämpft den Netto-Jobverlust.", me:"ANTI-DOOM COUNTERFORCE: the shrinking workforce leaves a gap that automation FILLS rather than displacing → dampens net job loss."},
+
+  {f:"R",   t:"ECO",  conf:"belegt",    pol:"+", mech:"Kumulierte Verschwendung und unbepreiste Externalitäten → Klimawandel, Biodiversitätsverlust, Bodendegradation.", me:"Accumulated waste and unpriced externalities → climate change, biodiversity loss, soil degradation."},
+  {f:"ECO", t:"SEC",  conf:"plausibel", pol:"-", mech:"MOTOR: ökologische Schäden = reale Knappheit (Ernten, Wasser, Land) → senken die wahrgenommene Sicherheit. Zweiter Treiber des Attraktors.", me:"ENGINE: ecological damage = real scarcity (harvests, water, land) → lowers perceived security. The second driver of the attractor."},
+  {f:"ECO", t:"D",    conf:"umstritten",pol:"+", mech:"Klimaschäden → Migrationsdruck → In-group-Backlash → Radikalisierung. Direkte zweite Speisung von D — die Kette Klima→Migration→Rechtsruck ist umstritten.", me:"Climate damage → migration pressure → in-group backlash → radicalization. A direct second feed of D — the chain climate→migration→right-shift is contested."},
+  {f:"ECO", t:"ECOc", conf:"umstritten",pol:"+", mech:"Heller Fork: existenzielle Bedrohung KÖNNTE den Kreis auf „Menschheit“ weiten — aber gebremst, weil Klima diffus/langsam ist.", me:"Bright fork: an existential threat COULD widen the circle to 'humanity' — but braked, because climate is diffuse/slow."},
+  {f:"ECOc",t:"LK",   conf:"umstritten",pol:"-", mech:"Gelänge planetare Kooperation, öffnete sie den Riegel (wie BLOC) — der schmale, spekulative globale Ausweg.", me:"If planetary cooperation succeeded, it would open the lock (like BLOC) — the narrow, speculative global exit."},
+
+  {f:"C",  t:"SOZ", conf:"belegt",    pol:"+", mech:"Präkarisierung materialisiert sich im Alltag: Armut, Obdachlosigkeit, Perspektivlosigkeit.", me:"Precarization materializes in daily life: poverty, homelessness, hopelessness."},
+  {f:"DIST",t:"SOZ",conf:"plausibel", pol:"-", mech:"Höherer Verteilungsgrad dämpft die soziale Erosion an der Wurzel; Kaperung verstärkt sie.", me:"A higher degree of distribution dampens social erosion at the root; capture amplifies it."},
+  {f:"SOZ",t:"SEC", conf:"plausibel", pol:"-", loop:true, mech:"DIE EXTERNALITÄT: sichtbarer Verfall, Vandalismus und Kriminalität senken die wahrgenommene Sicherheit der GANZEN Gesellschaft — unbepreist, wie die ökologische Degeneration. Macht SOZ zum sozialen Motor des Attraktors.", me:"THE EXTERNALITY: visible decay, vandalism and crime lower the perceived security of SOCIETY AS A WHOLE — unpriced, like ecological degeneration. Makes SOZ the social engine of the attractor."},
+  {f:"SOZ",t:"D",   conf:"plausibel", pol:"+", mech:"Perspektivlosigkeit + radikalisierte Kriminalität → Zulauf zu den Rändern. Rückkopplung, denn Radikalisierung (D) befeuert die Gewalt ihrerseits.", me:"Hopelessness + radicalized crime → influx to the fringes. A loop, since radicalization (D) fuels the violence in turn."},
+
+  {f:"A",   t:"AUT", conf:"plausibel", pol:"+", mech:"JANUS: dieselbe KI-Fähigkeit, die Jobs ersetzt (A→B), erzeugt zugleich einen Produktivitätsüberschuss. Eine Quelle, zwei Gesichter.", me:"JANUS: the same AI capability that replaces jobs (A→B) also generates a productivity surplus. One source, two faces."},
+  {f:"AUT", t:"SURP",conf:"plausibel", pol:"+", mech:"Produktivitätsüberschuss speist den potenziellen Wohlstand.", me:"Productivity surplus feeds potential prosperity."},
+  {f:"EDU", t:"SURP",conf:"plausibel", pol:"+", mech:"Breite Qualifizierung speist den potenziellen Wohlstand (Humankapital).", me:"Broad upskilling feeds potential prosperity (human capital)."},
+  {f:"MED", t:"SURP",conf:"plausibel", pol:"+", mech:"Gesundheits-/Technikgewinne speisen den potenziellen Wohlstand.", me:"Health/technical gains feed potential prosperity."},
+  {f:"EDU", t:"Au",  conf:"plausibel", pol:"+", mech:"KI-Bildung qualifiziert in der Breite → mehr Menschen in den Aufwertungspfad statt Service/Wegfall.", me:"AI education upskills at scale → more people into the upgrading path instead of service/redundancy."},
+  {f:"EDU", t:"DIST",conf:"plausibel", pol:"+", mech:"MASTER-SCHALTER (hell): breit zugängliche Qualifizierung verteilt die Gewinne breiter → hebt den Verteilungsgrad.", me:"MASTER SWITCH (bright): broadly accessible upskilling distributes the gains more widely → raises the degree of distribution."},
+  {f:"MED", t:"SEC", conf:"plausibel", pol:"+", mech:"Fortschritt hebt Lebensqualität und senkt Kosten → hebt die Basis-Sicherheit direkt → weiter Kreis.", me:"Progress raises quality of life and lowers costs → raises baseline security directly → wider circle."},
+  {f:"Au",  t:"DIST",conf:"plausibel", pol:"-", mech:"AMBIVALENZ (Sackgasse geschlossen): Aufwertungsrollen sind ihrer Natur nach KNAPP → konzentrieren die Gewinne bei wenigen → drücken die Verteilung zur Kaperung. Nur breite Bildung (EDU) mildert das.", me:"AMBIVALENCE (dead end closed): upgrading roles are by nature SCARCE → concentrate the gains in a few → push distribution toward capture. Only broad education (EDU) softens this."},
+  {f:"SURP",t:"DIST",conf:"belegt",    pol:"+", mech:"Der Überschuss existiert — er ist die Masse, die überhaupt verteilt werden kann.", me:"The surplus exists — it is the mass that can be distributed at all."},
+  {f:"DIST",t:"SEC", conf:"plausibel", pol:"+", mech:"UTOPIE-ROUTE: breit verteilter Überschuss → breit gefühlter Wohlstand → SEC↑ → weiter Kreis → Riegel öffnen.", me:"UTOPIA ROUTE: broadly distributed surplus → broadly felt prosperity → SEC↑ → wider circle → locks open."},
+  {f:"DIST",t:"C",   conf:"plausibel", pol:"-", mech:"Hoher Verteilungsgrad dämpft die Präkarisierung an der Wurzel. Niedriger (Kaperung) → Überfluss OHNE Sicherheit → Dystopie.", me:"A high degree of distribution dampens precarization at the root. Low (capture) → abundance WITHOUT security → dystopia."},
+
+  // ---- Empirische Mediatoren (Deep-Research-Memo) ----
+  {f:"S2",  t:"FS",  conf:"plausibel", pol:"+", src:"OECD Corporate Tax Stats 2025 (K09)", mech:"FISC-Brücke: Steuer-Fehlbepreisung & Gewinnverlagerung mindern die Einnahmebasis → mehr Budget-Enge.", me:"FISC bridge: tax mispricing & profit shifting erode the revenue base → tighter budget."},
+  {f:"FS",  t:"SPROT",conf:"plausibel",pol:"-", src:"WIL 2026 (K01), OECD RTM 2024 (K02)", mech:"Mehr Budget-Enge → weniger tragfähige soziale Sicherung (Deckung, Ersatzraten).", me:"Tighter budget → less sustainable social protection (coverage, replacement rates)."},
+  {f:"SPROT",t:"SEC",conf:"plausibel", pol:"+", src:"OECD RTM 2024 (K02), Eurofound 2024 (K03)", mech:"Verlässliche Sicherung macht Schocks weniger existenziell → reale und gefühlte Resilienz steigt.", me:"Reliable protection makes shocks less existential → real and perceived resilience rise."},
+  {f:"HOU", t:"SEC", conf:"belegt",    pol:"-", src:"Eurofound 2024/25 (K03, K04)", mech:"Steigende Wohnkostenlast absorbiert verfügbares Einkommen → senkt selbst bei Beschäftigung das Sicherheitsgefühl.", me:"Rising housing-cost burden absorbs disposable income → lowers the sense of security even when employed."},
+  {f:"HOU", t:"SOZ", conf:"plausibel", pol:"+", src:"Eurofound 2024 (K03)", mech:"Wohnungsunsicherheit verzögert Lebensschritte, erhöht Stress → verstärkt soziale Frakturen im Alltag.", me:"Housing insecurity delays life steps, raises stress → amplifies everyday social fractures."},
+  {f:"SEC", t:"TRUST",conf:"plausibel",pol:"+", src:"Eurofound Trust (K04), OECD Trust 2024 (K05)", mech:"Wo die finanzielle Lage weniger prekär erlebt wird, fällt institutionelles Vertrauen systematisch höher aus.", me:"Where the financial situation is experienced as less precarious, institutional trust is systematically higher."},
+  {f:"TRUST",t:"D",  conf:"plausibel", pol:"-", src:"OECD Trust (K05), Guiso/Herrera/Morelli/Sonno (K06)", mech:"Höheres Vertrauen dämpft die Nachfrage nach anti-institutionellen/protektionistischen Antworten — messbarer Proxy für das Substrat P.", me:"Higher trust dampens demand for anti-institutional/protectionist answers — a measurable proxy for the substrate P."},
+  {f:"PLAT",t:"MPWR",conf:"plausibel", pol:"+", src:"OECD digital markets (K10), Eurofound platform work (K18)", mech:"Netzwerkeffekte, Datenakkumulation, Lock-in und Tipping stärken Gatekeeper-Macht und erschweren Wettbewerb.", me:"Network effects, data accumulation, lock-in and tipping strengthen gatekeeper power and impede competition."},
+  {f:"MPWR",t:"DIST",conf:"belegt",    pol:"-", src:"De Loecker/Eeckhout/Unger (K07), Autor et al. (K08)", mech:"MASTER-SCHALTER (ökonomisch): höhere Markups und sinkende Lohnquote verschieben Überschüsse zu Kapital- und Gatekeeper-Renten → Kaperung.", me:"MASTER SWITCH (economic): higher markups and a falling labor share shift surpluses to capital and gatekeeper rents → capture."},
+  {f:"EDU", t:"ADL", conf:"plausibel", pol:"+", src:"OECD Adult skills/learning (K14, K15)", mech:"KI-Bildung speist den Erwachsenen-Reskilling-Kanal — den im KI-/Demografie-Kontext eigentlich entscheidenden.", me:"AI education feeds the adult reskilling channel — the one that actually matters under AI/demographics."},
+  {f:"ADL", t:"DIST",conf:"plausibel", pol:"+", src:"OECD RTM (K02), Adult skills (K14), Adult learning (K15)", mech:"Breiter Zugang zu Erwachsenenlernen erhöht die Chance, dass KI-/Digitalgewinne breit statt eng diffundieren. Aber: Zugang ist ungleich verteilt.", me:"Broad access to adult learning raises the chance that AI/digital gains diffuse broadly rather than narrowly. But: access is unequally distributed."},
+  {f:"ADL", t:"C",   conf:"plausibel", pol:"-", src:"OECD Adult skills/learning (K14, K15)", mech:"Reskilling senkt Verdrängungsrisiken in exponierten Tätigkeiten und verbessert Übergänge.", me:"Reskilling lowers displacement risk in exposed tasks and improves transitions."},
+  {f:"DEM", t:"VAC", conf:"belegt",    pol:"+", src:"OECD Employment Outlook 2025 (K16), JRC/Eurostat (K17)", mech:"Schrumpfende Erwerbsbevölkerung → offene Stellen, Arbeitskräfteknappheit (Wendepunkt 2025).", me:"Shrinking workforce → vacancies, labor scarcity (turning point 2025)."},
+  {f:"VAC", t:"C",   conf:"plausibel", pol:"-", src:"OECD EO 2025 (K16), JRC/Eurostat (K17)", mech:"Bei Arbeitskräfteknappheit füllt Technik eher Lücken, statt ausschließlich Beschäftigte zu ersetzen → dämpft Präkarisierung.", me:"Under labor scarcity, tech tends to fill gaps rather than only replacing workers → dampens precarization."},
+  {f:"VAC", t:"AUT", conf:"plausibel", pol:"+", src:"OECD EO 2025 (K16), IAB (DE01)", mech:"Knappes Arbeitsangebot erhöht den Anreiz zur Produktivitätsinvestition in Software, Robotik und KI.", me:"Scarce labor supply raises the incentive to invest in productivity — software, robotics, AI."}
+];
+// ====================================================================
+
+const UI={
+  de:{sub:"Wirksystem-Karte · „Wohin gehen wir.“ — klick auf Knoten oder Kante für den Mechanismus",
+      detail:"Detail", empty:"Nichts ausgewählt. Klick einen Knoten oder eine Kante.",
+      hint:"Ziehen = verschieben · <kbd>Scroll</kbd> = zoomen.<br>Jede Kante trägt ein Vorzeichen (+/−).",
+      affects:"Wirkt auf →", caused:"← Bewirkt durch", conf:"Konfidenz", mechh:"Mechanismus (das „weil“)", comment:"Kommentar", beleg:"Beleg"},
+  en:{sub:"System-of-effects map · „Where are we going.“ — click a node or edge for the mechanism",
+      detail:"Detail", empty:"Nothing selected. Click a node or an edge.",
+      hint:"Drag = pan · <kbd>Scroll</kbd> = zoom.<br>Every edge carries a sign (+/−).",
+      affects:"Affects →", caused:"← Caused by", conf:"Confidence", mechh:"Mechanism (the „because“)", comment:"Comment", beleg:"Evidence"}
+};
+const CONFLABEL={de:{belegt:"belegt",plausibel:"plausibel",umstritten:"umstritten",spekulativ:"spekulativ"},
+                 en:{belegt:"evidenced",plausibel:"plausible",umstritten:"contested",spekulativ:"speculative"}};
+const TYPELABEL={de:{start:"Startbedingung",branch:"Verzweigungspunkt ◇",convergence:"Konvergenzknoten ◎",outcome:"Zustand",bright:"Heller Pfad",tipping:"Kipp-Variable ★",locked:"Verriegelt 🔒",premise:"Substrat-Prämisse ⊙"},
+                 en:{start:"Starting condition",branch:"Branch point ◇",convergence:"Convergence ◎",outcome:"State",bright:"Bright path",tipping:"Tipping variable ★",locked:"Locked 🔒",premise:"Substrate premise ⊙"}};
+const POLTXT={de:{p:"gleichgerichtet (+)",m:"gegengerichtet (−)",loop:" · Rückkopplung ↺"},
+              en:{p:"same-direction (+)",m:"opposite-direction (−)",loop:" · feedback ↺"}};
+function legendHTML(){
+  const L=LANG==='de'
+   ?{conf:"Konfidenz (Kantenfarbe)",b:"belegt",p:"plausibel",u:"umstritten",
+     pol:"Polarität (Vorzeichen + Linie)",plus:"gleichgerichtet (mehr → mehr)",minus:"gegengerichtet (mehr → weniger)",loop:"gebogen = Rückkopplung",
+     nodes:"Knoten",nl:"◇ Verzweigung · ◎ Konvergenz · ★ Kipp-Variable · 🔒 verriegelt · ⊙ Substrat"}
+   :{conf:"Confidence (edge color)",b:"evidenced",p:"plausible",u:"contested",
+     pol:"Polarity (sign + line)",plus:"same-direction (more → more)",minus:"opposite-direction (more → less)",loop:"curved = feedback",
+     nodes:"Nodes",nl:"◇ branch · ◎ convergence · ★ tipping · 🔒 locked · ⊙ substrate"};
+  return `<div style="margin-bottom:6px"><b>${L.conf}</b></div>
+   <div class="li"><span class="sw" style="border-color:var(--belegt)"></span> ${L.b}</div>
+   <div class="li"><span class="sw" style="border-color:var(--plausibel)"></span> ${L.p}</div>
+   <div class="li"><span class="sw" style="border-color:var(--umstritten)"></span> ${L.u}</div>
+   <div style="margin:8px 0 4px"><b>${L.pol}</b></div>
+   <div class="li"><span class="sw" style="border-color:var(--muted)"></span> <b>+</b> ${L.plus}</div>
+   <div class="li"><span class="sw" style="border-color:var(--muted);border-top-style:dashed"></span> <b>−</b> ${L.minus}</div>
+   <div class="li"><span class="sw" style="border-color:var(--muted);border-top-style:dotted"></span> ↺ ${L.loop}</div>
+   <div style="margin:8px 0 4px"><b>${L.nodes}</b></div>
+   <div class="li">${L.nl}</div>`;
+}
+
+const NS="http://www.w3.org/2000/svg";
+function el(tag,attrs){const e=document.createElementNS(NS,tag);
+  if(attrs)for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+let LANG="de";
+function NL(n){return LANG==="en"&&n.le?n.le:n.label;}
+function NN(n){return LANG==="en"&&n.ne?n.ne:n.note;}
+function EM(e){return LANG==="en"&&e.me?e.me:e.mech;}
+
+const svg=document.getElementById("svg");
+const stage=document.getElementById("stage");
+const NW=200, NH=72;
+const CONF={belegt:"var(--belegt)",plausibel:"var(--plausibel)",umstritten:"var(--umstritten)",spekulativ:"var(--spekulativ)"};
+const CONFHEX={belegt:"#3ea66b",plausibel:"#d49a2a",umstritten:"#9b6bd6",spekulativ:"#c0564f"};
+const TYPE={
+  start:{fill:"#16314d",stroke:"#4a90d9",badge:""},
+  branch:{fill:"#2a2433",stroke:"#8a6fb0",badge:"◇"},
+  convergence:{fill:"#173024",stroke:"#3ea66b",badge:"◎",glow:true},
+  outcome:{fill:"#1c2027",stroke:"#3a414e",badge:""},
+  bright:{fill:"#1d2b1f",stroke:"#5fa86b",badge:""},
+  tipping:{fill:"#2e2611",stroke:"#e0b341",badge:""},
+  locked:{fill:"#1a1c20",stroke:"#5b6270",badge:"🔒",dash:"5 4"},
+  premise:{fill:"#241a2e",stroke:"#a07bc8",badge:"⊙",glow:true}
+};
+
+let view={x:0,y:0,k:1};
+const gRoot=el("g");
+svg.appendChild(gRoot);
+const defs=el("defs");
+for(const c in CONFHEX){
+  const m=el("marker",{id:"arw-"+c,viewBox:"0 0 10 10",refX:9,refY:5,markerWidth:7,markerHeight:7,orient:"auto-start-reverse"});
+  m.appendChild(el("path",{d:"M0 0 L10 5 L0 10 z",fill:CONFHEX[c]}));defs.appendChild(m);
+}
+svg.appendChild(defs);
+const gEdges=el("g");gRoot.appendChild(gEdges);
+const gNodes=el("g");gRoot.appendChild(gNodes);
+
+function center(id){const n=NODES[id];return {x:n.x+NW/2,y:n.y+NH/2};}
+function clip(cx,cy,bx,by){
+  const dx=bx-cx, dy=by-cy, hw=NW/2+4, hh=NH/2+4;
+  let tx=Infinity,ty=Infinity;
+  if(dx!==0) tx=hw/Math.abs(dx);
+  if(dy!==0) ty=hh/Math.abs(dy);
+  const t=Math.min(tx,ty);
+  return {x:cx+dx*t, y:cy+dy*t};
+}
+function drawEdges(){
+  gEdges.textContent="";
+  EDGES.forEach((e)=>{
+    const a=center(e.f), b=center(e.t);
+    const p1=clip(a.x,a.y,b.x,b.y), p2=clip(b.x,b.y,a.x,a.y);
+    let d, lx, ly;
+    if(e.loop){
+      const cx=(p1.x+p2.x)/2 - 230, cy=(p1.y+p2.y)/2;
+      d=`M${p1.x} ${p1.y} Q ${cx} ${cy} ${p2.x} ${p2.y}`;
+      lx=0.25*p1.x+0.5*cx+0.25*p2.x; ly=0.25*p1.y+0.5*cy+0.25*p2.y;
+    } else {
+      d=`M${p1.x} ${p1.y} L${p2.x} ${p2.y}`;
+      lx=(p1.x+p2.x)/2; ly=(p1.y+p2.y)/2;
+    }
+    const path=el("path",{d,class:"edge",stroke:CONF[e.conf],"marker-end":"url(#arw-"+e.conf+")"});
+    if(e.pol==="-") path.setAttribute("stroke-dasharray","7 5");
+    if(e.loop) path.setAttribute("stroke-dasharray","2 6");
+    gEdges.appendChild(path);
+    const gp=el("g",{class:"polg"});
+    gp.appendChild(el("circle",{cx:lx,cy:ly,r:7.5,fill:"#0f1115",stroke:CONFHEX[e.conf],"stroke-width":1.3}));
+    const txt=el("text",{x:lx,y:ly+3.6,"text-anchor":"middle",fill:CONFHEX[e.conf]});
+    txt.textContent=e.pol==="+"?"+":"−"; gp.appendChild(txt); gEdges.appendChild(gp);
+    const hit=el("path",{d,class:"ehit"});
+    hit.addEventListener("click",ev=>{ev.stopPropagation();showEdge(e);});
+    gEdges.appendChild(hit);
+  });
+}
+function drawNodes(){
+  gNodes.textContent="";
+  for(const id in NODES){
+    const n=NODES[id], t=TYPE[n.type];
+    const g=el("g",{class:"nodeBox",transform:`translate(${n.x},${n.y})`});
+    const rect=el("rect",{width:NW,height:NH,rx:11,fill:t.fill,stroke:t.stroke,"stroke-width":n.type==="convergence"?3:1.6});
+    if(t.dash) rect.setAttribute("stroke-dasharray",t.dash);
+    if(t.glow) rect.setAttribute("filter","drop-shadow(0 0 7px rgba(62,166,107,.55))");
+    g.appendChild(rect);
+    const fo=el("foreignObject",{width:NW,height:NH});
+    const div=document.createElement("div");
+    div.className="nlabel";
+    div.innerHTML=(t.badge?`<span class="badge" style="margin-right:5px">${t.badge}</span>`:"")+NL(n);
+    fo.appendChild(div);g.appendChild(fo);
+    g.addEventListener("click",ev=>{ev.stopPropagation();showNode(id);});
+    gNodes.appendChild(g);
+  }
+}
+const KREF={
+  K01:"https://wir2026.wid.world/",
+  K02:"https://www.oecd.org/en/publications/more-effective-social-protection-for-stronger-economic-growth_3947946a-en.html",
+  K03:"https://www.eurofound.europa.eu/en/surveys-and-data/data-catalogue/difficulty-making-ends-meet-and-housing-insecurity-eu-2024",
+  K04:"https://www.eurofound.europa.eu/en/surveys-and-data/data-catalogue/trust-institutions-eu-2020-2024-scale-1-10",
+  K05:"https://www.oecd.org/en/publications/oecd-survey-on-drivers-of-trust-in-public-institutions-2024-results_9a20554b-en.html",
+  K06:"https://igier.unibocconi.eu/sites/default/files/media/publication/704_0.pdf",
+  K07:"https://academic.oup.com/qje/article/135/2/561/5714769",
+  K08:"https://academic.oup.com/qje/article/135/2/645/5721266",
+  K09:"https://www.oecd.org/en/publications/corporate-tax-statistics-2025_6a915941-en.html",
+  K10:"https://www.oecd.org/en/publications/competition-market-study-of-online-marketplaces-in-poland-latvia-and-lithuania_3134e707-en.html",
+  K14:"https://www.oecd.org/en/publications/adult-skills-and-productivity_12ac6e8c-en.html",
+  K15:"https://www.oecd.org/en/publications/trends-in-adult-learning_ec0624a6-en.html",
+  K16:"https://www.oecd.org/en/publications/oecd-employment-outlook-2025_194a947b-en.html",
+  K17:"https://joint-research-centre.ec.europa.eu/jrc-news-and-updates/tackling-eus-shrinking-workforce-better-education-more-women-jobs-skilled-migration-2025-06-11_en",
+  K18:"https://www.eurofound.europa.eu/en/publications/all/online-platform-work-european-union-implications-working-conditions-access-to-information",
+  DE01:"https://doku.iab.de/forschungsbericht/2025/fb2325.pdf"
+};
+function linkify(t){return t.replace(/\b(K\d{2}|DE\d{2})\b/g,m=>KREF[m]
+  ?`<a href="${KREF[m]}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#7fb3ff;text-decoration:underline">${m}</a>`:m);}
+
+function showNode(id){
+  const n=NODES[id], U=UI[LANG];
+  const ins=EDGES.filter(e=>e.t===id), outs=EDGES.filter(e=>e.f===id);
+  let h=`<div class="title">${NL(n)}</div>`;
+  h+=`<span class="tag" style="background:#222732;color:#cdd2da">${TYPELABEL[LANG][n.type]}</span>`;
+  if(NN(n)) h+=`<div class="row"><div class="k">${U.comment}</div>${NN(n)}</div>`;
+  if(outs.length){h+=`<div class="row"><div class="k">${U.affects}</div>`;
+    outs.forEach(e=>h+=edgeLine(e,NL(NODES[e.t])));h+=`</div>`;}
+  if(ins.length){h+=`<div class="row"><div class="k">${U.caused}</div>`;
+    ins.forEach(e=>h+=edgeLine(e,NL(NODES[e.f]),true));h+=`</div>`;}
+  document.getElementById("detail").innerHTML=h;
+}
+function showEdge(e){
+  const U=UI[LANG];
+  let h=`<div class="title">${NL(NODES[e.f])} → ${NL(NODES[e.t])}</div>`;
+  h+=`<span class="tag" style="background:${CONFHEX[e.conf]}33;color:${CONFHEX[e.conf]}">${U.conf}: ${CONFLABEL[LANG][e.conf]}</span>`;
+  h+=`<span class="tag" style="background:#222732;color:#cdd2da">${polLabel(e)}</span>`;
+  h+=`<div class="row"><div class="k">${U.mechh}</div><span class="mech">${EM(e)}</span></div>`;
+  if(e.src) h+=`<div class="row"><div class="k">${U.beleg}</div>${linkify(e.src)}</div>`;
+  document.getElementById("detail").innerHTML=h;
+}
+function polLabel(e){const T=POLTXT[LANG];return (e.pol==="+"?T.p:T.m)+(e.loop?T.loop:"");}
+function edgeLine(e,other,incoming){
+  const arrow=incoming?"← ":"→ ", m=EM(e);
+  return `<div style="margin:5px 0;cursor:pointer" onclick='__se(${JSON.stringify(JSON.stringify(e))})'>
+    <span style="color:${CONFHEX[e.conf]}">${e.pol==="+"?"＋":"－"}</span> ${arrow}${other}
+    <div class="mech" style="color:var(--muted);font-size:11.5px;margin:2px 0 0 14px">${m.slice(0,90)}${m.length>90?"…":""}</div>
+    ${e.src?`<div style="color:#6f9a6f;font-size:10.5px;margin:2px 0 0 14px">📎 ${linkify(e.src)}</div>`:""}</div>`;
+}
+window.__se=s=>showEdge(JSON.parse(JSON.parse(s)));
+function clearDetail(){document.getElementById("detail").innerHTML=
+  `<div class="empty">${UI[LANG].empty}</div><div class="hint">${UI[LANG].hint}</div>`;}
+
+function render(){
+  document.documentElement.lang=LANG;
+  document.getElementById("subtitle").innerHTML=UI[LANG].sub;
+  document.getElementById("detailHead").textContent=UI[LANG].detail;
+  document.getElementById("legend").innerHTML=legendHTML();
+  document.getElementById("langbtn").textContent=LANG==="de"?"EN":"DE";
+  drawEdges(); drawNodes(); clearDetail();
+}
+function toggleLang(){LANG=LANG==="de"?"en":"de";render();}
+
+// pan & zoom
+function apply(){gRoot.setAttribute("transform",`translate(${view.x},${view.y}) scale(${view.k})`);}
+let drag=null;
+stage.addEventListener("mousedown",e=>{drag={x:e.clientX,y:e.clientY,vx:view.x,vy:view.y};stage.classList.add("drag");});
+window.addEventListener("mousemove",e=>{if(!drag)return;view.x=drag.vx+(e.clientX-drag.x);view.y=drag.vy+(e.clientY-drag.y);apply();});
+window.addEventListener("mouseup",()=>{drag=null;stage.classList.remove("drag");});
+stage.addEventListener("wheel",e=>{e.preventDefault();
+  const r=stage.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+  const f=e.deltaY<0?1.1:0.9,nk=Math.max(.3,Math.min(2.4,view.k*f));
+  view.x=mx-(mx-view.x)*(nk/view.k);view.y=my-(my-view.y)*(nk/view.k);view.k=nk;apply();
+},{passive:false});
+stage.addEventListener("click",()=>clearDetail());
+
+render();
+(function fit(){
+  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  for(const id in NODES){const n=NODES[id];minX=Math.min(minX,n.x);minY=Math.min(minY,n.y);
+    maxX=Math.max(maxX,n.x+NW);maxY=Math.max(maxY,n.y+NH);}
+  const pad=60,r=stage.getBoundingClientRect();
+  const k=Math.min((r.width-pad*2)/(maxX-minX),(r.height-pad*2)/(maxY-minY),1.4);
+  view.k=k;view.x=pad-minX*k+(r.width-pad*2-(maxX-minX)*k)/2;view.y=pad-minY*k;apply();
+})();
+</script>
+</body>
+</html>
