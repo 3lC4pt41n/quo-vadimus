@@ -80,6 +80,20 @@
 	    border-radius:6px;padding:4px 8px;font-size:11px;font-weight:650;cursor:pointer}
 	  .routeBtn:hover,.routeBtn.active{background:#2a3140;border-color:var(--route-color);
 	    box-shadow:inset 0 0 0 1px var(--route-color)}
+	  .simControl{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}
+	  .simControl input[type="range"]{width:100%;accent-color:#7fb3ff;margin:7px 0 2px}
+	  .simScale{display:flex;justify-content:space-between;gap:8px;font-size:10.5px}
+	  .simMode{color:var(--muted)}
+	  .simMode.active{color:var(--ink);font-weight:700}
+	  .simHint{font-size:10.5px;line-height:1.35;color:var(--muted);margin-top:6px}
+	  .simCounts{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+	  .simPill{border:1px solid var(--line);border-radius:999px;padding:2px 7px;background:#1d222c}
+	  .simPill.good{border-color:#78c86f;color:#b9e6b2}
+	  .simPill.bad{border-color:#e05a5a;color:#f1b2b2}
+	  .simPill.conflict{border-color:#c9b458;color:#eadf9b}
+	  .nodeBox.simGood rect{fill:#173024;stroke:#78c86f}
+	  .nodeBox.simBad rect{fill:#321b1b;stroke:#e05a5a}
+	  .nodeBox.simConflict rect{fill:url(#simConflictPattern);stroke:#c9b458}
 	  .edge.routeStep{stroke-width:4.6}
 	  .nodeBox.routeStep rect{stroke-width:4.4}
 	  .polg.routeStep circle{stroke-width:2.6}
@@ -427,6 +441,16 @@ const TRACETXT={
   de:{upstream:"Ursachen",downstream:"Folgen",active:"Hervorgehoben",nodes:"Knoten",edges:"Kanten"},
   en:{upstream:"Causes",downstream:"Effects",active:"Highlighted",nodes:"nodes",edges:"edges"}
 };
+const SIMTXT={
+  de:{title:"DIST-Schalter", experimental:"experimentell", captured:"gekapert", off:"aus", distributed:"verteilt",
+      mode:"Szenario", result:"Qualitative Wirkung", good:"stabilisierend", bad:"destabilisierend",
+      conflict:"Pfadkonflikt", method:"Methode",
+      note:"Qualitative Vorzeichen-Propagation ab DIST auf der kürzesten BFS-Schicht; keine Gewichtung. Widersprüchliche gleich kurze Pfade werden gestreift."},
+  en:{title:"DIST switch", experimental:"experimental", captured:"captured", off:"off", distributed:"distributed",
+      mode:"Scenario", result:"Qualitative effect", good:"stabilizing", bad:"destabilizing",
+      conflict:"path conflict", method:"Method",
+      note:"Qualitative sign propagation from DIST on the shortest BFS layer; no weighting. Contradictory equal-length paths are striped."}
+};
 const ROUTE_COLOR={utopia:"#78c86f",dystopia:"#e05a5a"};
 const ROUTES=[
   {id:"utopia",kind:"utopia",name:"Utopie-Route",nameEn:"Utopia route",
@@ -438,6 +462,12 @@ const ROUTES=[
    note:"Knappe Aufwertung drückt Verteilung; gekaperter Überfluss nährt Präkarisierung und soziale Erosion; Sicherheit fällt, der Kreis verengt sich bis zur Machtordnung.",
    noteEn:"Scarce upgrading depresses distribution; captured abundance feeds precarity and social erosion; security falls, the circle contracts into power-based order."}
 ];
+const SIM_VALENCE={
+  DIST:1, SEC:1, TRUST:1, SPROT:1, T3:1, GROW:1, INV:1, AUT:1, SURP:1, EDU:1, MED:1,
+  FUND:1, OWN:1, VAC:1, CFT:1, BLOC:1, ECOc:1, ADL:1,
+  C:-1, D:-1, E:-1, LK:-1, P:-1, ORD:-1, SYS:-1, SOZ:-1, ECO:-1, FIN:-1, CYBER:-1,
+  FS:-1, WZ:-1, R:-1, J:-1, L:-1, B:-1, Bs:-1, Bm:-1, Bw:-1, Au:-1, Dp:-1, HOU:-1, MPWR:-1, PLAT:-1
+};
 const CHAINLABEL={
   de:{0:"Substrat",1:"Arbeit/KI",2:"Steuer/LK",3:"Machtordnung",4:"Schulden",5:"Ökologie",6:"Überschuss",7:"Demografie",8:"Soziales",9:"Institutionen",10:"Eigentum",11:"Finanzfragilität",13:"Cyber"},
   en:{0:"substrate",1:"work/AI",2:"tax/location",3:"power order",4:"debt",5:"ecology",6:"surplus",7:"demography",8:"social",9:"institutions",10:"ownership",11:"finance",13:"cyber"}
@@ -468,12 +498,14 @@ function legendHTML(){
      pol:"Polarität (Vorzeichen + Linie)",plus:"gleichgerichtet (mehr → mehr)",minus:"gegengerichtet (mehr → weniger)",loop:"gebogen = Rückkopplung",
      nodes:"Knoten",nl:"◇ Verzweigung · ◎ Konvergenz · ★ Kipp-Variable · 🔒 verriegelt · ⊙ Substrat",
      hub:"Dickerer Rahmen = stärker vernetzter Hub",loopColors:"Schleifenfarbe",re:"rot = verstärkend",ba:"blau = balancierend",
-     routeColors:"Routenfarbe",ut:"grün = Utopie",dy:"rot = Dystopie"}
+     routeColors:"Routenfarbe",ut:"grün = Utopie",dy:"rot = Dystopie",
+     sim:"DIST-Simulation",sg:"grün = stabilisierend",sr:"rot = destabilisierend",sc:"gestreift = Pfadkonflikt"}
    :{conf:"Confidence (edge color)",b:"evidenced",p:"plausible",u:"contested",
      pol:"Polarity (sign + line)",plus:"same-direction (more → more)",minus:"opposite-direction (more → less)",loop:"curved = feedback",
      nodes:"Nodes",nl:"◇ branch · ◎ convergence · ★ tipping · 🔒 locked · ⊙ substrate",
      hub:"Thicker frame = more connected hub",loopColors:"Loop color",re:"red = reinforcing",ba:"blue = balancing",
-     routeColors:"Route color",ut:"green = utopia",dy:"red = dystopia"};
+     routeColors:"Route color",ut:"green = utopia",dy:"red = dystopia",
+     sim:"DIST simulation",sg:"green = stabilizing",sr:"red = destabilizing",sc:"striped = path conflict"};
   return `<div style="margin-bottom:6px"><b>${L.conf}</b></div>
    <div class="li"><span class="sw" style="border-color:var(--belegt)"></span> ${L.b}</div>
    <div class="li"><span class="sw" style="border-color:var(--plausibel)"></span> ${L.p}</div>
@@ -490,7 +522,11 @@ function legendHTML(){
    <div class="li"><span class="sw" style="border-color:${LOOP_COLOR.balancing}"></span> ${L.ba}</div>
    <div style="margin:8px 0 4px"><b>${L.routeColors}</b></div>
    <div class="li"><span class="sw" style="border-color:${ROUTE_COLOR.utopia}"></span> ${L.ut}</div>
-   <div class="li"><span class="sw" style="border-color:${ROUTE_COLOR.dystopia}"></span> ${L.dy}</div>`;
+   <div class="li"><span class="sw" style="border-color:${ROUTE_COLOR.dystopia}"></span> ${L.dy}</div>
+   <div style="margin:8px 0 4px"><b>${L.sim}</b></div>
+   <div class="li"><span class="sw" style="border-color:#78c86f"></span> ${L.sg}</div>
+   <div class="li"><span class="sw" style="border-color:#e05a5a"></span> ${L.sr}</div>
+   <div class="li"><span class="sw" style="border-color:#c9b458;border-top-style:dashed"></span> ${L.sc}</div>`;
 }
 function saveFilter(){
   try{localStorage.setItem(FILTER_KEY,JSON.stringify({
@@ -518,6 +554,25 @@ function routeButtonsHTML(){
   return ROUTES.map(route=>`<button class="routeBtn ${activeRouteId===route.id?"active":""}" data-route-id="${route.id}"
     style="--route-color:${ROUTE_COLOR[route.kind]}" onclick="selectRoute('${route.id}')">${routeName(route)}</button>`).join("");
 }
+function simModeLabel(mode){
+  const S=SIMTXT[LANG];
+  return mode<0?S.captured:mode>0?S.distributed:S.off;
+}
+function simSummaryHTML(){
+  if(!activeSim) return "";
+  const S=SIMTXT[LANG], c=activeSim.counts;
+  return `<div class="simCounts"><span class="simPill good">${c.good} ${S.good}</span>
+    <span class="simPill bad">${c.bad} ${S.bad}</span>
+    <span class="simPill conflict">${c.conflict} ${S.conflict}</span></div>`;
+}
+function simControlHTML(){
+  const S=SIMTXT[LANG];
+  const mark=mode=>`<span class="simMode ${distSimMode===mode?"active":""}">${simModeLabel(mode)}</span>`;
+  return `<div class="simControl"><b>${S.title}</b> <span class="simMode">${S.experimental}</span>
+    <input id="distSimRange" type="range" min="-1" max="1" step="1" value="${distSimMode}" oninput="setDistSim(Number(this.value))">
+    <div class="simScale">${mark(-1)}${mark(0)}${mark(1)}</div>
+    <div class="simHint">${S.note}</div><div id="simSummary">${simSummaryHTML()}</div></div>`;
+}
 function traceActionsHTML(id){
   const T=TRACETXT[LANG];
   const button=(direction,arrow)=>`<button class="traceBtn" data-trace-id="${id}" data-trace-dir="${direction}"
@@ -532,6 +587,7 @@ function renderFilters(){
   const chains=CHAIN_FILTERS.map(c=>filterChip("chain",c,CHAINLABEL[LANG][c]||`#${c}`)).join("");
   document.getElementById("filters").innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
     <b>${F.title}</b><button onclick="resetFilters()">${F.reset}</button></div>
+    ${simControlHTML()}
     <div class="routeControl"><b>${R.choose}</b><div class="routeButtons">${routeButtonsHTML()}</div></div>
     <div class="loopControl"><b>${T.choose}</b><select id="loopSelect" onchange="selectLoop(this.value)">${loopOptionsHTML()}</select>
       <div class="loopKey"><span><span class="loopDot" style="background:${LOOP_COLOR.reinforcing}"></span> ${T.reinforcing}</span>
@@ -568,6 +624,41 @@ function traceSets(id,direction){
   }
   return {nodes,edges};
 }
+function distSimResult(mode){
+  const data=new Map([["DIST",{depth:0,signs:new Set([mode])}]]);
+  const queue=[{id:"DIST",sign:mode,depth:0}], edges=new Set();
+  while(queue.length){
+    const current=queue.shift();
+    const currentData=data.get(current.id);
+    if(!currentData||currentData.depth!==current.depth) continue;
+    EDGES.forEach((edge,ei)=>{
+      if(edge.f!==current.id) return;
+      edges.add(ei);
+      const nextDepth=current.depth+1;
+      const nextSign=current.sign*(edge.pol==="+"?1:-1);
+      const nextData=data.get(edge.t);
+      if(!nextData){
+        data.set(edge.t,{depth:nextDepth,signs:new Set([nextSign])});
+        queue.push({id:edge.t,sign:nextSign,depth:nextDepth});
+      } else if(nextData.depth===nextDepth&&!nextData.signs.has(nextSign)){
+        nextData.signs.add(nextSign);
+        queue.push({id:edge.t,sign:nextSign,depth:nextDepth});
+      }
+    });
+  }
+  const nodes=new Set(data.keys()), state={}, counts={good:0,bad:0,conflict:0};
+  data.forEach((entry,id)=>{
+    if(entry.signs.size>1){
+      state[id]="conflict"; counts.conflict+=1; return;
+    }
+    const signal=[...entry.signs][0];
+    const valence=SIM_VALENCE[id]||1;
+    const qualitative=signal*valence;
+    state[id]=qualitative>=0?"good":"bad";
+    counts[state[id]]+=1;
+  });
+  return {mode,nodes,edges,state,counts};
+}
 function activeLoopEdges(){
   const loop=LOOPS.find(l=>l.id===activeLoopId);
   return loop?loopSets(loop).edges:new Set();
@@ -579,10 +670,14 @@ function activeRouteEdges(){
 function activeTraceEdges(){
   return activeTrace?traceSets(activeTrace.id,activeTrace.direction).edges:new Set();
 }
+function activeSimEdges(){
+  return activeSim?activeSim.edges:new Set();
+}
 function activeForcedEdges(){
   const edges=activeLoopEdges();
   activeRouteEdges().forEach(ei=>edges.add(ei));
   activeTraceEdges().forEach(ei=>edges.add(ei));
+  activeSimEdges().forEach(ei=>edges.add(ei));
   return edges;
 }
 function syncLoopSelect(){
@@ -599,6 +694,15 @@ function syncTraceButtons(){
     const active=activeTrace&&btn.dataset.traceId===activeTrace.id&&btn.dataset.traceDir===activeTrace.direction;
     setClass(btn,"active",active);
   });
+}
+function syncDistSimControl(){
+  const range=document.getElementById("distSimRange");
+  if(range) range.value=distSimMode;
+  document.querySelectorAll(".simScale .simMode").forEach((item,index)=>{
+    setClass(item,"active",[-1,0,1][index]===distSimMode);
+  });
+  const summary=document.getElementById("simSummary");
+  if(summary) summary.innerHTML=simSummaryHTML();
 }
 function edgeVisible(e){
   const chain=String(NODES[e.f]?.chain);
@@ -653,6 +757,30 @@ function showTraceSummary(result,direction){
   summary.hidden=false;
   summary.textContent=`${T.active}: ${T[direction]} · ${result.nodes.size} ${T.nodes} · ${result.edges.size} ${T.edges}`;
 }
+function clearDistSimClasses(){
+  document.querySelectorAll(".nodeBox.simGood,.nodeBox.simBad,.nodeBox.simConflict").forEach(node=>{
+    node.classList.remove("simGood","simBad","simConflict");
+  });
+}
+function applyDistSimClasses(result){
+  clearDistSimClasses();
+  Object.entries(result.state).forEach(([id,state])=>{
+    const node=document.querySelector(`.nodeBox[data-id="${id}"]`);
+    if(!node) return;
+    setClass(node,"simGood",state==="good");
+    setClass(node,"simBad",state==="bad");
+    setClass(node,"simConflict",state==="conflict");
+  });
+}
+function showDistSim(result){
+  const S=SIMTXT[LANG];
+  const c=result.counts;
+  const h=`<div class="title">${S.title}</div>
+    <span class="tag" style="background:#222732;color:#cdd2da">${S.mode}: ${simModeLabel(result.mode)}</span>
+    <div class="row"><div class="k">${S.result}</div>${c.good} ${S.good} · ${c.bad} ${S.bad} · ${c.conflict} ${S.conflict}</div>
+    <div class="row"><div class="k">${S.method}</div>${S.note}</div>`;
+  document.getElementById("detail").innerHTML=h;
+}
 function clearRouteSequence(){
   routeTimers.forEach(timer=>clearTimeout(timer));
   routeTimers=[];
@@ -684,10 +812,12 @@ function selectLoop(id){
   activeLoopId=id;
   activeRouteId="";
   activeTrace=null;
+  distSimMode=0; activeSim=null; clearDistSimClasses();
   clearRouteSequence();
   syncLoopSelect();
   syncRouteButtons();
   syncTraceButtons();
+  syncDistSimControl();
   document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint,#stage .routeStep").forEach(node=>node.classList.remove("dim","hot","loopTint","routeStep"));
   if(!id){clearDetail();return;}
   const loop=LOOPS.find(l=>l.id===id);
@@ -702,10 +832,12 @@ function selectRoute(id){
   activeRouteId=id;
   activeLoopId="";
   activeTrace=null;
+  distSimMode=0; activeSim=null; clearDistSimClasses();
   clearRouteSequence();
   syncLoopSelect();
   syncRouteButtons();
   syncTraceButtons();
+  syncDistSimControl();
   document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint,#stage .routeStep").forEach(node=>node.classList.remove("dim","hot","loopTint","routeStep"));
   if(!id){clearDetail();return;}
   const route=ROUTES.find(r=>r.id===id);
@@ -721,16 +853,45 @@ function traceFrom(id,direction){
   activeLoopId="";
   activeRouteId="";
   activeTrace={id,direction};
+  distSimMode=0; activeSim=null; clearDistSimClasses();
   focusId=id;
   focusEdgeId=null;
   clearRouteSequence();
   syncLoopSelect();
   syncRouteButtons();
   syncTraceButtons();
+  syncDistSimControl();
   const result=traceSets(id,direction);
   highlight(result);
   applyFilters();
   showTraceSummary(result,direction);
+}
+function setDistSim(mode){
+  distSimMode=Math.max(-1,Math.min(1,Number(mode)||0));
+  activeLoopId="";
+  activeRouteId="";
+  activeTrace=null;
+  activeSim=null;
+  focusId=null;
+  focusEdgeId=null;
+  clearRouteSequence();
+  clearDistSimClasses();
+  document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint,#stage .routeStep").forEach(node=>node.classList.remove("dim","hot","loopTint","routeStep"));
+  syncLoopSelect();
+  syncRouteButtons();
+  syncTraceButtons();
+  if(!distSimMode){
+    renderFilters();
+    applyFilters();
+    clearDetail();
+    return;
+  }
+  activeSim=distSimResult(distSimMode);
+  renderFilters();
+  highlight({nodes:activeSim.nodes,edges:activeSim.edges});
+  applyDistSimClasses(activeSim);
+  applyFilters();
+  showDistSim(activeSim);
 }
 
 const NS="http://www.w3.org/2000/svg";
@@ -781,21 +942,28 @@ for(const c in CONFHEX){
   const m=el("marker",{id:"arw-"+c,viewBox:"0 0 10 10",refX:9,refY:5,markerWidth:7,markerHeight:7,orient:"auto-start-reverse"});
   m.appendChild(el("path",{d:"M0 0 L10 5 L0 10 z",fill:CONFHEX[c]}));defs.appendChild(m);
 }
+const simPattern=el("pattern",{id:"simConflictPattern",patternUnits:"userSpaceOnUse",width:10,height:10,patternTransform:"rotate(45)"});
+simPattern.appendChild(el("rect",{width:10,height:10,fill:"#252412"}));
+simPattern.appendChild(el("path",{d:"M0 0 L0 10",stroke:"#c9b458","stroke-width":3}));
+defs.appendChild(simPattern);
 svg.appendChild(defs);
 const gEdges=el("g");gRoot.appendChild(gEdges);
 const gNodes=el("g");gRoot.appendChild(gNodes);
 let focusId=null, focusEdgeId=null, activeLoopId="", activeRouteId="", routeTimers=[];
 let activeTrace=null;
+let distSimMode=0, activeSim=null;
 
 function setClass(node,cls,on){node.classList.toggle(cls,!!on);}
 function clearHighlight(){
   focusId=null; focusEdgeId=null; activeLoopId=""; activeRouteId="";
   activeTrace=null;
+  distSimMode=0; activeSim=null;
   clearRouteSequence();
+  clearDistSimClasses();
   document.documentElement.style.removeProperty("--focus-glow");
   document.documentElement.style.removeProperty("--loop-tint");
   document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint,#stage .routeStep").forEach(node=>node.classList.remove("dim","hot","loopTint","routeStep"));
-  syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); applyFilters();
+  syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); syncDistSimControl(); applyFilters();
 }
 function highlight({nodes=new Set(),edges=new Set(),tint=null}={}){
   const hasFocus=nodes.size>0||edges.size>0;
@@ -819,7 +987,7 @@ function highlight({nodes=new Set(),edges=new Set(),tint=null}={}){
   });
 }
 function focusNode(id){
-  activeLoopId=""; activeRouteId=""; activeTrace=null; clearRouteSequence(); syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); applyFilters();
+  activeLoopId=""; activeRouteId=""; activeTrace=null; distSimMode=0; activeSim=null; clearRouteSequence(); clearDistSimClasses(); syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); syncDistSimControl(); applyFilters();
   focusId=id; focusEdgeId=null;
   const nodes=new Set([id]), edges=new Set();
   EDGES.forEach((edge,i)=>{
@@ -835,7 +1003,7 @@ function edgeIndex(edge){
     (candidate.f===edge.f&&candidate.t===edge.t&&candidate.mech===edge.mech&&candidate.pol===edge.pol));
 }
 function focusEdge(edge,ei=edgeIndex(edge)){
-  activeLoopId=""; activeRouteId=""; activeTrace=null; clearRouteSequence(); syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); applyFilters();
+  activeLoopId=""; activeRouteId=""; activeTrace=null; distSimMode=0; activeSim=null; clearRouteSequence(); clearDistSimClasses(); syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); syncDistSimControl(); applyFilters();
   focusId=null; focusEdgeId=ei;
   const nodes=new Set([edge.f,edge.t]), edges=new Set();
   if(ei>-1) edges.add(ei);
