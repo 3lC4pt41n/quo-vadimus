@@ -4,7 +4,7 @@
 
 Ein Zukunftsszenario, gebaut als **Wirksystem**: kein Vibe, keine Prophezeiung, sondern ein gerichteter Kausalgraph, dem man an einer bestimmten Stelle widersprechen kann. Jede Wirkbeziehung trägt einen benannten Mechanismus („weil…"), eine Konfidenz (belegt / plausibel / umstritten) und ein **Vorzeichen** (+ gleichgerichtet / − gegengerichtet).
 
-Die interaktive Karte liegt in [`quo-vadimus.html`](./quo-vadimus.html) — im Browser öffnen, Knoten oder Kante anklicken, um den Mechanismus zu sehen. Stand **V0.3**: 51 Knoten, 113 signierte Kanten, strukturell geprüft (keine Sackgassen, keine offenen Referenzen); 27 Kanten tragen Quellen-Belege. V0, V0.1 und V0.2 sind über das Versionsmenü im Header als eingefrorene Zwischenstände erreichbar.
+Die interaktive Karte liegt in [`quo-vadimus.html`](./quo-vadimus.html) — im Browser öffnen, Knoten oder Kante anklicken, um den Mechanismus zu sehen. Stand **V0.4**: 53 Knoten, 123 signierte Kanten, strukturell geprüft (keine Sackgassen, keine offenen Referenzen); 32 Kanten tragen Quellen-Belege. V0, V0.1 und V0.2 sind über das Versionsmenü im Header als eingefrorene Zwischenstände erreichbar.
 
 ## Das System in fünf Sätzen
 
@@ -65,6 +65,16 @@ Die Karte modellierte den KI-Schock bisher als *Bestands*-Problem: `B` verdräng
 Der Hebel ist der **Leiter-Bruch**: Die KI automatisiert genau die Junior-Sprosse, über die man früher zu den knappen Aufsichtsrollen (`Au`) aufstieg. `ENT` greift damit *zwei helle Pfade* an — die `Au`-Pipeline trocknet aus, und Reskilling (`EDU`/`ADL`) verpufft ohne On-Ramp („the learning curve is being automated"). Fünf Kanten: `A→ENT+` (Junior-Tätigkeiten sind am codierbarsten → zuerst automatisiert), `ENT→C+` (blockierter Einstieg → Jugend-Präkarisierung, eigener Strom-Kanal), `ENT→SOZ+` (füllt die „Perspektivlosigkeit" mit Ursache und Kohorte), `ENT→Au−` (der Leiter-Bruch) und `VAC→ENT−` (*umstritten*: Arbeitskräfteknappheit *kann* die Sprosse offenhalten, aber bisher gewinnt die Automatisierung — „need the job to get the job"). `ENT` schärft so das `VAC`-Paradox: Knappheit an Erfahrenen neben Überschuss an Ausgesperrten.
 
 Belegt: Dallas Fed (22–25-Jährige in KI-exponierten Berufen −13 % seit 2022), US-Einstiegs-Postings −35 % seit 1/2023 (Revelio), UK-Tech-Absolventenrollen −46 % (2024), Absolventen-Arbeitslosenquote 9,7 % (9/2025). *Umstritten* die Schwere (Klasse 2026 projiziert +5,6 %); „30 % Absolventen-Arbeitslosigkeit" ist spekulativ, nicht verkabelt. `ENT` ist vorgelagert und schließt keinen neuen Zyklus — der Schleifen-Zensus bleibt **179 (148 verstärkend, 31 balancierend)**.
+
+## V0.4 — die ökonomische Staatskunst eines Rivalen
+
+Die Karte nannte die Bühne der Machtpolitik (`G` = „China/Taiwan…", `ORD` = machtbasierte Ordnung, `SYS` = Autokratie, `RES` = Rüstung/Prestige), aber nicht die *ökonomischen Waffen*. Der Riegel `LK` wurde nur *intern* getrieben (`S2`); ein externer subventionierter Rivale fehlte ganz, und der originale **Autor-China-Schock** (Importkonkurrenz → lokaler Jobkollaps) war nirgends verkabelt — `MPWR` zitiert Autor nur für *Markups*, nicht für den Handelsschock. Neu in V0.4: zwei Knoten.
+
+**`MERC` — Subvention & Yuan-Unterbewertung (China-Schock 2.0).** Der externe Treiber von `LK` *und* `C`: `MERC→LK+` (gegen einen subventionierten Rivalen matcht kein Alleingang → der Riegel beißt härter), `MERC→C+` (Deindustrialisierung handelbarer Sektoren → Präkarisierung), `MERC→E+` (protektionistischer Backlash → Renationalisierung). Dazu ein **Leck** wie `AUT→SEC`: `MERC→SEC+ (umstritten)` — billige subventionierte Güter heben den Konsumboden, *während* sie Jobs zerstören. Belegt: Yuan 8,5 % (IMF 7/2025) bis 18–25 % (IMF-Update/Goldman) unterbewertet; China 30 % der Weltproduktion bei 13 % Konsum; OECD — Stahl-Subvention 5× jeder andere; „China-Schock 2.0" bereits EU-Politik (Überkapazitäts-Instrument).
+
+**`CHOKE` — Ressourcen-/Lieferketten-Chokepoints (seltene Erden).** Das **geopolitische Analogon zu `FIN`**: eine Drossel am hellen Überschuss-Motor. `CHOKE→AUT−` (Automation/Energiewende hängen an Magneten/Chips, die ein Rivale lizenziert → bremst den Motor an der Wurzel), `CHOKE→T3−` (Hebel statt Regeln → Koordination unmöglich), `CHOKE→ORD+` (demonstrierter Zwang verfestigt die Machtordnung) und der Gegen-Fork `CHOKE→BLOC+ (umstritten)` (kann europäische strategische Autonomie zünden — CRMA). Belegt: April 2025 — MOFCOM-Lizenzen auf 7 SE + alle Magnete (plus Gallium/Germanium/Graphit); Chinas Hebel sitzt in der *Verarbeitung*; US-Magnete erst 2027–28 → maximales Hebelfenster.
+
+Beide hängen an `G` und schließen keinen neuen Zyklus — der Schleifen-Zensus bleibt **179 (148 verstärkend, 31 balancierend)**. Bewusst getrennt gehalten (Preis-/Handelswaffe vs. Liefer-Waffe), wie die Karte auch `S2`/`LK`/`MPWR` trennt.
 
 ## An welchem Link glaubst du nicht?
 
