@@ -108,7 +108,24 @@
     border-radius:6px;padding:3px 8px;font-size:11px;font-weight:650;cursor:pointer}
   .filterPanel button:hover{background:#2a3140}
   .nodeBox.filteredOut:not(.dim){opacity:.24}
+  .mapTools{position:absolute;right:14px;top:14px;background:rgba(23,26,33,.92);
+    border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;gap:6px;align-items:center;
+    max-width:min(390px,calc(100% - 28px));z-index:2}
+  .mapTools input{width:210px;min-width:0;background:#1d222c;color:var(--ink);border:1px solid var(--line);
+    border-radius:6px;padding:5px 8px;font-size:11px}
+  .mapTools button{background:#222732;color:var(--ink);border:1px solid var(--line);
+    border-radius:6px;padding:5px 8px;font-size:11px;font-weight:650;cursor:pointer;white-space:nowrap}
+  .mapTools button:hover{background:#2a3140}
+  .searchStatus{color:var(--muted);font-size:10.5px;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .minimap{position:absolute;right:14px;top:62px;width:180px;height:118px;background:rgba(23,26,33,.92);
+    border:1px solid var(--line);border-radius:10px;padding:7px;z-index:2}
+  .minimap svg{width:100%;height:100%;display:block}
+  .miniNode{fill:#3a414e;opacity:.75}
+  .miniNode.hot{fill:#e8eaed;opacity:1}
+  .miniView{fill:rgba(127,179,255,.12);stroke:#7fb3ff;stroke-width:2}
   @media (max-width:1000px){.filterPanel{left:14px;top:14px;bottom:auto;max-width:calc(100% - 28px);max-height:45%;overflow:auto}}
+  @media (max-width:1000px){.mapTools{right:14px;bottom:14px;top:auto;max-width:calc(100% - 28px)}
+    .mapTools input{width:150px}.minimap{right:14px;bottom:64px;top:auto;width:150px;height:98px}}
   .sw{width:22px;height:0;border-top-width:3px;border-top-style:solid;display:inline-block}
   .empty{color:var(--muted);font-style:italic;margin-top:8px}
   .hint{color:var(--muted);font-size:11px;margin-top:14px;line-height:1.5}
@@ -132,6 +149,8 @@
 <div id="wrap">
   <div id="stage">
     <svg id="svg"></svg>
+    <div class="mapTools" id="mapTools"></div>
+    <div class="minimap"><svg id="minimapSvg"></svg></div>
     <div class="legend" id="legend"></div>
     <div class="filterPanel" id="filters"></div>
   </div>
@@ -451,6 +470,10 @@ const SIMTXT={
       conflict:"path conflict", method:"Method",
       note:"Qualitative sign propagation from DIST on the shortest BFS layer; no weighting. Contradictory equal-length paths are striped."}
 };
+const NAVTXT={
+  de:{search:"Knoten suchen", reset:"Ansicht zurücksetzen", jump:"Springen", noMatch:"Kein Treffer"},
+  en:{search:"Search node", reset:"Reset view", jump:"Jump", noMatch:"No match"}
+};
 const ROUTE_COLOR={utopia:"#78c86f",dystopia:"#e05a5a"};
 const ROUTES=[
   {id:"utopia",kind:"utopia",name:"Utopie-Route",nameEn:"Utopia route",
@@ -595,6 +618,46 @@ function renderFilters(){
     <div><b>${F.conf}</b><div class="fg">${confs}</div></div>
     <div><b>${F.pol}</b><div class="fg">${pols}</div></div>
     <div><b>${F.chain}</b><div class="fg">${chains}</div></div>`;
+}
+function escAttr(s){
+  return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+}
+function nodeOptionsHTML(){
+  return Object.keys(NODES).sort((a,b)=>NL(NODES[a]).localeCompare(NL(NODES[b]),LANG))
+    .map(id=>`<option value="${escAttr(id)}" label="${escAttr(NL(NODES[id]))}"></option>`).join("");
+}
+function renderMapTools(){
+  const T=NAVTXT[LANG];
+  document.getElementById("mapTools").innerHTML=`<input id="nodeSearch" list="nodeOptions"
+      placeholder="${escAttr(T.search)}" onkeydown="if(event.key==='Enter') jumpToSearch()">
+    <datalist id="nodeOptions">${nodeOptionsHTML()}</datalist>
+    <button onclick="jumpToSearch()">${T.jump}</button>
+    <button onclick="resetView()">${T.reset}</button>
+    <span class="searchStatus" id="searchStatus"></span>`;
+}
+function findNodeQuery(raw){
+  const q=String(raw||"").trim().toLowerCase();
+  if(!q) return "";
+  if(NODES[q.toUpperCase()]) return q.toUpperCase();
+  const entries=Object.entries(NODES);
+  const exact=entries.find(([id,n])=>id.toLowerCase()===q||NL(n).toLowerCase()===q);
+  if(exact) return exact[0];
+  const prefix=entries.find(([id,n])=>id.toLowerCase().startsWith(q)||NL(n).toLowerCase().startsWith(q));
+  if(prefix) return prefix[0];
+  const partial=entries.find(([id,n])=>id.toLowerCase().includes(q)||NL(n).toLowerCase().includes(q));
+  return partial?partial[0]:"";
+}
+function jumpToSearch(){
+  const input=document.getElementById("nodeSearch"), status=document.getElementById("searchStatus");
+  const id=findNodeQuery(input?input.value:"");
+  if(!id){
+    if(status) status.textContent=NAVTXT[LANG].noMatch;
+    return;
+  }
+  if(input) input.value=id;
+  if(status) status.textContent=id;
+  centerOnNode(id);
+  showNode(id);
 }
 function edgeIndexByPair(f,t){return EDGES.findIndex(e=>e.f===f&&e.t===t);}
 function loopSets(loop){
@@ -905,6 +968,8 @@ function EM(e){return LANG==="en"&&e.me?e.me:e.mech;}
 const svg=document.getElementById("svg");
 const stage=document.getElementById("stage");
 const filtersEl=document.getElementById("filters");
+const mapToolsEl=document.getElementById("mapTools");
+const minimapSvg=document.getElementById("minimapSvg");
 const NW=200, NH=72;
 const CONF={belegt:"var(--belegt)",plausibel:"var(--plausibel)",umstritten:"var(--umstritten)",spekulativ:"var(--spekulativ)"};
 const CONFHEX={belegt:"#3ea66b",plausibel:"#d49a2a",umstritten:"#9b6bd6",spekulativ:"#c0564f"};
@@ -985,6 +1050,7 @@ function highlight({nodes=new Set(),edges=new Set(),tint=null}={}){
     setClass(edge,"loopTint",hot&&!!tint&&!edge.classList.contains("ehit"));
     setClass(edge,"dim",hasFocus&&!hot);
   });
+  updateMinimap();
 }
 function focusNode(id){
   activeLoopId=""; activeRouteId=""; activeTrace=null; distSimMode=0; activeSim=null; clearRouteSequence(); clearDistSimClasses(); syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); syncDistSimControl(); applyFilters();
@@ -997,6 +1063,7 @@ function focusNode(id){
     }
   });
   highlight({nodes,edges});
+  updateMinimap();
 }
 function edgeIndex(edge){
   return EDGES.findIndex(candidate=>candidate===edge||
@@ -1008,8 +1075,35 @@ function focusEdge(edge,ei=edgeIndex(edge)){
   const nodes=new Set([edge.f,edge.t]), edges=new Set();
   if(ei>-1) edges.add(ei);
   highlight({nodes,edges});
+  updateMinimap();
 }
 
+function graphBounds(){
+  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  for(const id in NODES){
+    const n=NODES[id];
+    minX=Math.min(minX,n.x); minY=Math.min(minY,n.y);
+    maxX=Math.max(maxX,n.x+NW); maxY=Math.max(maxY,n.y+NH);
+  }
+  return {minX,minY,maxX,maxY,w:maxX-minX,h:maxY-minY};
+}
+function resetView(){fit();}
+function fit(){
+  const b=graphBounds(), pad=60, r=stage.getBoundingClientRect();
+  const k=Math.min((r.width-pad*2)/b.w,(r.height-pad*2)/b.h,1.4);
+  view.k=k;
+  view.x=pad-b.minX*k+(r.width-pad*2-b.w*k)/2;
+  view.y=pad-b.minY*k;
+  apply();
+}
+function centerOnNode(id){
+  const c=center(id), r=stage.getBoundingClientRect();
+  const k=Math.max(.72,Math.min(view.k,1.45));
+  view.k=k;
+  view.x=r.width/2-c.x*k;
+  view.y=r.height/2-c.y*k;
+  apply();
+}
 function center(id){const n=NODES[id];return {x:n.x+NW/2,y:n.y+NH/2};}
 function clip(cx,cy,bx,by){
   const dx=bx-cx, dy=by-cy, hw=NW/2+4, hh=NH/2+4;
@@ -1018,6 +1112,45 @@ function clip(cx,cy,bx,by){
   if(dy!==0) ty=hh/Math.abs(dy);
   const t=Math.min(tx,ty);
   return {x:cx+dx*t, y:cy+dy*t};
+}
+const MINI={w:166,h:104,pad:5};
+function miniProject(x,y,b=graphBounds()){
+  const scale=Math.min((MINI.w-MINI.pad*2)/b.w,(MINI.h-MINI.pad*2)/b.h);
+  const ox=MINI.pad+(MINI.w-MINI.pad*2-b.w*scale)/2;
+  const oy=MINI.pad+(MINI.h-MINI.pad*2-b.h*scale)/2;
+  return {x:ox+(x-b.minX)*scale,y:oy+(y-b.minY)*scale,scale};
+}
+function renderMinimap(){
+  minimapSvg.textContent="";
+  minimapSvg.setAttribute("viewBox",`0 0 ${MINI.w} ${MINI.h}`);
+  const b=graphBounds();
+  const bg=el("rect",{x:0,y:0,width:MINI.w,height:MINI.h,rx:6,fill:"#11151c",stroke:"#2a2f3a"});
+  minimapSvg.appendChild(bg);
+  Object.entries(NODES).forEach(([id,n])=>{
+    const p=miniProject(n.x+NW/2,n.y+NH/2,b);
+    minimapSvg.appendChild(el("rect",{class:"miniNode","data-mini-id":id,x:p.x-1.7,y:p.y-1.7,width:3.4,height:3.4,rx:1}));
+  });
+  minimapSvg.appendChild(el("rect",{id:"miniViewport",class:"miniView",x:0,y:0,width:1,height:1,rx:2}));
+  updateMinimap();
+}
+function updateMinimap(){
+  const vp=document.getElementById("miniViewport");
+  if(!vp) return;
+  const b=graphBounds(), r=stage.getBoundingClientRect();
+  const x0=-view.x/view.k, y0=-view.y/view.k;
+  const x1=x0+r.width/view.k, y1=y0+r.height/view.k;
+  const p0=miniProject(x0,y0,b), p1=miniProject(x1,y1,b);
+  const x=Math.max(0,Math.min(MINI.w,p0.x));
+  const y=Math.max(0,Math.min(MINI.h,p0.y));
+  const x2=Math.max(0,Math.min(MINI.w,p1.x));
+  const y2=Math.max(0,Math.min(MINI.h,p1.y));
+  vp.setAttribute("x",Math.min(x,x2));
+  vp.setAttribute("y",Math.min(y,y2));
+  vp.setAttribute("width",Math.max(1,Math.abs(x2-x)));
+  vp.setAttribute("height",Math.max(1,Math.abs(y2-y)));
+  document.querySelectorAll(".miniNode").forEach(node=>{
+    setClass(node,"hot",!!focusId&&node.dataset.miniId===focusId);
+  });
 }
 function drawEdges(){
   gEdges.textContent="";
@@ -1139,16 +1272,25 @@ function render(){
   document.getElementById("detailHead").textContent=UI[LANG].detail;
   document.getElementById("legend").innerHTML=legendHTML();
   document.getElementById("langbtn").textContent=LANG==="de"?"EN":"DE";
-  renderFilters(); drawEdges(); drawNodes(); applyFilters(); clearDetail();
+  renderMapTools(); renderFilters(); drawEdges(); drawNodes(); renderMinimap(); applyFilters(); clearDetail();
 }
 function toggleLang(){LANG=LANG==="de"?"en":"de";render();}
 
 // pan & zoom
-function apply(){gRoot.setAttribute("transform",`translate(${view.x},${view.y}) scale(${view.k})`);}
+function apply(){
+  gRoot.setAttribute("transform",`translate(${view.x},${view.y}) scale(${view.k})`);
+  updateMinimap();
+}
 let drag=null;
 filtersEl.addEventListener("click",e=>e.stopPropagation());
 filtersEl.addEventListener("mousedown",e=>e.stopPropagation());
 filtersEl.addEventListener("wheel",e=>e.stopPropagation(),{passive:true});
+mapToolsEl.addEventListener("click",e=>e.stopPropagation());
+mapToolsEl.addEventListener("mousedown",e=>e.stopPropagation());
+mapToolsEl.addEventListener("wheel",e=>e.stopPropagation(),{passive:true});
+minimapSvg.addEventListener("click",e=>e.stopPropagation());
+minimapSvg.addEventListener("mousedown",e=>e.stopPropagation());
+minimapSvg.addEventListener("wheel",e=>e.stopPropagation(),{passive:true});
 stage.addEventListener("mousedown",e=>{drag={x:e.clientX,y:e.clientY,vx:view.x,vy:view.y};stage.classList.add("drag");});
 window.addEventListener("mousemove",e=>{if(!drag)return;view.x=drag.vx+(e.clientX-drag.x);view.y=drag.vy+(e.clientY-drag.y);apply();});
 window.addEventListener("mouseup",()=>{drag=null;stage.classList.remove("drag");});
@@ -1160,14 +1302,7 @@ stage.addEventListener("wheel",e=>{e.preventDefault();
 stage.addEventListener("click",()=>clearDetail());
 
 render();
-(function fit(){
-  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
-  for(const id in NODES){const n=NODES[id];minX=Math.min(minX,n.x);minY=Math.min(minY,n.y);
-    maxX=Math.max(maxX,n.x+NW);maxY=Math.max(maxY,n.y+NH);}
-  const pad=60,r=stage.getBoundingClientRect();
-  const k=Math.min((r.width-pad*2)/(maxX-minX),(r.height-pad*2)/(maxY-minY),1.4);
-  view.k=k;view.x=pad-minX*k+(r.width-pad*2-(maxX-minX)*k)/2;view.y=pad-minY*k;apply();
-})();
+fit();
 </script>
 </body>
 </html>
