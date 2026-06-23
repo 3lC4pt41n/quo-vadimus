@@ -4,7 +4,7 @@
 
 A scenario of the future, built as a **system of effects**: not a vibe, not a prophecy, but a directed causal graph you can disagree with at a specific point. Every causal link carries a named mechanism ("because…"), a confidence (evidenced / plausible / contested), and a **sign** (+ same-direction / − opposite-direction).
 
-The interactive map lives in [`quo-vadimus.html`](./quo-vadimus.html) — open it in a browser, click a node or an edge to see the mechanism. State **V0.1**: 49 nodes, 102 signed edges, structurally checked (no dead ends, no dangling references); 23 edges carry source citations. The frozen original remains reachable as [V0](./versions/v0/quo-vadimus.html) (git tag `v0`). The map is bilingual — use the DE/EN toggle in the header.
+The interactive map lives in [`quo-vadimus.html`](./quo-vadimus.html) — open it in a browser, click a node or an edge to see the mechanism. State **V0.2**: 50 nodes, 108 signed edges, structurally checked (no dead ends, no dangling references); 25 edges carry source citations. The frozen original remains reachable as [V0](./versions/v0/quo-vadimus.html) (git tag `v0`). The map is bilingual — use the DE/EN toggle in the header.
 
 ## The system in five sentences
 
@@ -49,6 +49,14 @@ The first outside round ([r/SocialDemocracy](https://www.reddit.com/r/SocialDemo
 **The Bismarck thermostat (`D→Dp`) and the fourth lock (`C→FS`).** Historically, radicalization produces redistribution via elite fear (Bismarck, the New Deal, the NHS at ~250% debt-to-GDP) — for the first time the map's social system contains balancing loops (30 in V0.1 versus 2 in V0). Pulling the other way: wage-financed redistribution depends on exactly the wage base the AI chain erodes.
 
 **Counter-edges & 2026 evidence.** The distribution gate leaks (`AUT→SEC`: consumption inequality is everywhere smaller than income inequality), mass threat historically lifted distribution (`G→DIST`, Scheve/Stasavage, contested), labor scarcity pushes `DIST` upward (`VAC→DIST`). And three "contested" bright forks have become running empirics: the global minimum tax in force (side-by-side carve-out instead of collapse), CBAM live since 1 Jan 2026, SAFE/Readiness 2030 signed by 18 member states.
+
+## V0.2 — the financial-externality engine
+
+An outside round (r/wallstreetbets, the private-credit thesis) closed a real gap: the map had no node for **endogenous financial fragility**. Chain 4 models *public* debt (g vs. r), not private leverage and liquidity dynamics. New in V0.2: **`FIN` — debt-financed automation/asset bubble → boom-bust**, the **third externality engine** beside ecological (`ECO`) and social (`SOZ`) erosion. Shared signature: privatized gains, socialized losses, feedback onto everyone via `SEC`.
+
+`FIN` attacks the map's most optimistic assumption. The whole bright path hangs on `AUT→SURP→GROW` — the surplus is "guaranteed and lavish." `FIN` says: part of that surplus is a credit bubble (AI capex and buyouts on private credit, increasingly against "dead software & depreciating GPUs") that can burst rather than be distributed — the one place where *throttled* abundance tips into *destroyed* abundance. Wired with five edges: `AUT→FIN` (the boom builds the bust), `FIN→GROW−` (crash → recession, analogous to `ECO→GROW`), `FIN→SEC−` (savings/pensions wiped out — the engine signature), `FIN→C+` (credit crunch → layoffs, the fast Lehman channel) and `FIN→DIST−` (bailout asymmetry → capture, but *contested*: a crash can also deconcentrate wealth). Plus the **Minsky loop** `GROW→FIN+ (loop)`: realized gains feed leverage → fragility; with `FIN→GROW` it closes a **balancing** boom-bust oscillator (sign product −) that oscillates rather than running away. The recomputed loop census confirms it: V0.2 counts **179 cycles (148 reinforcing, 31 balancing)** — `FIN` adds exactly *one* new loop over V0.1 (178), and it is balancing.
+
+Evidenced, not speculated: IMF GFSR 2024 (five vulnerabilities, "bad PIK" = 57% of BDC PIK, >40% negative cash flow) and real gating in Q1 2026 (Blue Owl capped at 5%, Blackstone +$400m own capital, Cliffwater at 7%; Fed 6/2026 dot plot flips to a hike). Deliberately *not* turned into nodes, because below the abstraction level: PIK, synthetic PIK via DDTL, private-credit CLOs, mark-to-model/Level-3 opacity, liquidity mismatch — they live as detail in `FIN`'s `note`. Likewise out: "worse than 2008 / from 2027" is timing speculation, not wired.
 
 ## Which link don't you believe?
 
