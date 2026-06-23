@@ -8,7 +8,7 @@
   :root{
     --bg:#0f1115; --panel:#171a21; --ink:#e8eaed; --muted:#9aa0aa; --line:#2a2f3a;
     --belegt:#3ea66b; --plausibel:#d49a2a; --umstritten:#9b6bd6; --spekulativ:#c0564f;
-    --focus-glow:rgba(255,255,255,.38);
+	    --focus-glow:rgba(255,255,255,.38); --loop-tint:#e05a5a;
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
@@ -31,9 +31,12 @@
   .nodeBox rect{transition:filter .15s, stroke-width .15s}
   .nodeBox:hover rect{filter:brightness(1.18)}
   .dim{opacity:.12}
-  .nodeBox[data-degree-tier="mid"]{filter:drop-shadow(0 0 4px rgba(232,234,237,.16))}
-  .nodeBox[data-degree-tier="hub"]{filter:drop-shadow(0 0 8px rgba(232,234,237,.28))}
-  .nodeBox.hot,.edge.hot,.polg.hot{filter:drop-shadow(0 0 7px var(--focus-glow))}
+	  .nodeBox[data-degree-tier="mid"]{filter:drop-shadow(0 0 4px rgba(232,234,237,.16))}
+	  .nodeBox[data-degree-tier="hub"]{filter:drop-shadow(0 0 8px rgba(232,234,237,.28))}
+	  .nodeBox.hot,.edge.hot,.polg.hot{filter:drop-shadow(0 0 7px var(--focus-glow))}
+	  .edge.loopTint{stroke:var(--loop-tint)}
+	  .polg.loopTint circle{stroke:var(--loop-tint)}
+	  .polg.loopTint text{fill:var(--loop-tint)}
   .nodeBox.hot rect{stroke-width:3.8}
   .nlabel{font-size:11.5px;line-height:1.18;color:var(--ink);padding:6px 8px;
     height:100%;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:550;overflow:hidden}
@@ -56,11 +59,16 @@
     border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--muted);max-width:250px}
   .legend b{color:var(--ink);font-weight:600}
   .legend .li{display:flex;align-items:center;gap:7px;margin:3px 0}
-  .filterPanel{position:absolute;left:282px;bottom:14px;background:rgba(23,26,33,.92);
-    border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--muted);
-    max-width:min(520px,calc(100% - 296px))}
-  .filterPanel b{color:var(--ink);font-weight:600}
-  .filterPanel .fg{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0 8px}
+	  .filterPanel{position:absolute;left:282px;bottom:14px;background:rgba(23,26,33,.92);
+	    border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--muted);
+	    max-width:min(520px,calc(100% - 296px))}
+	  .filterPanel b{color:var(--ink);font-weight:600}
+	  .filterPanel .fg{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0 8px}
+	  .loopControl{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}
+	  .loopControl select{width:100%;margin-top:5px;background:#1d222c;color:var(--ink);border:1px solid var(--line);
+	    border-radius:6px;padding:4px 8px;font-size:11px}
+	  .loopKey{display:flex;gap:10px;flex-wrap:wrap;margin-top:5px}
+	  .loopDot{width:9px;height:9px;border-radius:50%;display:inline-block}
   .filterPanel label{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);
     border-radius:6px;padding:3px 6px;background:#1d222c;cursor:pointer;white-space:nowrap}
   .filterPanel input{margin:0;accent-color:#7fb3ff}
@@ -356,6 +364,41 @@ const FILTERTXT={
   en:{title:"Filters",conf:"Confidence",chain:"Chain",pol:"Sign",reset:"Reset",
       plus:"+",minus:"−"}
 };
+const LOOPTXT={
+  de:{choose:"Schleife hervorheben",none:"Keine Schleife",kind:"Typ",path:"Pfad",mechanism:"Mechanismus",
+      reinforcing:"verstärkend",balancing:"balancierend",colors:"Schleifenfarbe",
+      reKey:"rot = verstärkend",baKey:"blau = balancierend"},
+  en:{choose:"Highlight loop",none:"No loop",kind:"Type",path:"Path",mechanism:"Mechanism",
+      reinforcing:"reinforcing",balancing:"balancing",colors:"Loop color",
+      reKey:"red = reinforcing",baKey:"blue = balancing"}
+};
+const LOOP_COLOR={reinforcing:"#e05a5a",balancing:"#5aa7ff"};
+const LOOPS=[
+  {id:"master",kind:"reinforcing",name:"Master-Schleife",nameEn:"Master loop",
+   edges:[["LK","DIST"],["DIST","SEC"],["SEC","P"],["P","LK"]],
+   note:"Der Standort-Riegel drückt Verteilung; Verteilung hebt Sicherheit; Sicherheit weitet den Kreis; der weite Kreis schwächt den Riegel.",
+   noteEn:"The location lock depresses distribution; distribution raises security; security widens the circle; the wide circle weakens the lock."},
+  {id:"minsky",kind:"balancing",name:"Minsky-Oszillator",nameEn:"Minsky oscillator",
+   edges:[["GROW","FIN"],["FIN","GROW"]],
+   note:"Wachstum nährt Leverage und Fragilität; der Crash bremst Wachstum. Das Vorzeichenprodukt ist negativ.",
+   noteEn:"Growth feeds leverage and fragility; the crash brakes growth. The sign product is negative."},
+  {id:"renationalization",kind:"reinforcing",name:"E→C: Renationalisierung",nameEn:"E→C: renationalization",
+   edges:[["C","D"],["D","E"],["E","C"]],
+   note:"Präkarisierung radikalisiert; Radikalisierung treibt Renationalisierung; kleinere Märkte und Handelsreibung erzeugen neue Präkarisierung.",
+   noteEn:"Precarization radicalizes; radicalization drives renationalization; smaller markets and trade friction produce new precarization."},
+  {id:"precarity-security",kind:"reinforcing",name:"C→SEC: Sicherheitskreis",nameEn:"C→SEC: security circle",
+   edges:[["C","SEC"],["SEC","P"],["P","E"],["E","C"]],
+   note:"Präkarisierung senkt Sicherheit; geringere Sicherheit verengt den moralischen Kreis; Abschottung erhöht den Druck zurück auf C.",
+   noteEn:"Precarization lowers security; lower security narrows the moral circle; closure pushes pressure back onto C."},
+  {id:"social-externality",kind:"reinforcing",name:"SOZ→SEC: soziale Externalität",nameEn:"SOZ→SEC: social externality",
+   edges:[["SOZ","SEC"],["SEC","P"],["P","D"],["D","E"],["E","C"],["C","SOZ"]],
+   note:"Sichtbarer Verfall senkt Sicherheit für alle; der engere Kreis radikalisiert und speist über C neue soziale Erosion.",
+   noteEn:"Visible decay lowers security for everyone; the narrower circle radicalizes and feeds new social erosion via C."},
+  {id:"bismarck",kind:"balancing",name:"Bismarck-Thermostat",nameEn:"Bismarck thermostat",
+   edges:[["D","Dp"],["Dp","C"],["C","D"]],
+   note:"Radikalisierung erzeugt Umverteilung über Elitenangst; Absicherung dämpft C und damit die Radikalisierung.",
+   noteEn:"Radicalization produces redistribution through elite fear; protection dampens C and therefore radicalization."}
+];
 const CHAINLABEL={
   de:{0:"Substrat",1:"Arbeit/KI",2:"Steuer/LK",3:"Machtordnung",4:"Schulden",5:"Ökologie",6:"Überschuss",7:"Demografie",8:"Soziales",9:"Institutionen",10:"Eigentum",11:"Finanzfragilität",13:"Cyber"},
   en:{0:"substrate",1:"work/AI",2:"tax/location",3:"power order",4:"debt",5:"ecology",6:"surplus",7:"demography",8:"social",9:"institutions",10:"ownership",11:"finance",13:"cyber"}
@@ -385,11 +428,11 @@ function legendHTML(){
    ?{conf:"Konfidenz (Kantenfarbe)",b:"belegt",p:"plausibel",u:"umstritten",
      pol:"Polarität (Vorzeichen + Linie)",plus:"gleichgerichtet (mehr → mehr)",minus:"gegengerichtet (mehr → weniger)",loop:"gebogen = Rückkopplung",
      nodes:"Knoten",nl:"◇ Verzweigung · ◎ Konvergenz · ★ Kipp-Variable · 🔒 verriegelt · ⊙ Substrat",
-     hub:"Dickerer Rahmen = stärker vernetzter Hub"}
+     hub:"Dickerer Rahmen = stärker vernetzter Hub",loopColors:"Schleifenfarbe",re:"rot = verstärkend",ba:"blau = balancierend"}
    :{conf:"Confidence (edge color)",b:"evidenced",p:"plausible",u:"contested",
      pol:"Polarity (sign + line)",plus:"same-direction (more → more)",minus:"opposite-direction (more → less)",loop:"curved = feedback",
      nodes:"Nodes",nl:"◇ branch · ◎ convergence · ★ tipping · 🔒 locked · ⊙ substrate",
-     hub:"Thicker frame = more connected hub"};
+     hub:"Thicker frame = more connected hub",loopColors:"Loop color",re:"red = reinforcing",ba:"blue = balancing"};
   return `<div style="margin-bottom:6px"><b>${L.conf}</b></div>
    <div class="li"><span class="sw" style="border-color:var(--belegt)"></span> ${L.b}</div>
    <div class="li"><span class="sw" style="border-color:var(--plausibel)"></span> ${L.p}</div>
@@ -400,7 +443,10 @@ function legendHTML(){
    <div class="li"><span class="sw" style="border-color:var(--muted);border-top-style:dotted"></span> ↺ ${L.loop}</div>
    <div style="margin:8px 0 4px"><b>${L.nodes}</b></div>
    <div class="li">${L.nl}</div>
-   <div class="li">${L.hub}</div>`;
+   <div class="li">${L.hub}</div>
+   <div style="margin:8px 0 4px"><b>${L.loopColors}</b></div>
+   <div class="li"><span class="sw" style="border-color:${LOOP_COLOR.reinforcing}"></span> ${L.re}</div>
+   <div class="li"><span class="sw" style="border-color:${LOOP_COLOR.balancing}"></span> ${L.ba}</div>`;
 }
 function saveFilter(){
   try{localStorage.setItem(FILTER_KEY,JSON.stringify({
@@ -415,25 +461,52 @@ function filterChip(group,value,label,extraStyle=""){
   const style=extraStyle?` style="${extraStyle}"`:"";
   return `<label${style}><input type="checkbox" data-filter-group="${group}" data-filter-value="${value}" ${checked} onchange="toggleFilter('${group}','${value}',this.checked)"> ${label}</label>`;
 }
+function loopName(loop){return LANG==="en"&&loop.nameEn?loop.nameEn:loop.name;}
+function loopNote(loop){return LANG==="en"&&loop.noteEn?loop.noteEn:loop.note;}
+function loopOptionsHTML(){
+  const T=LOOPTXT[LANG];
+  return `<option value="">${T.none}</option>`+LOOPS.map(loop=>
+    `<option value="${loop.id}" ${activeLoopId===loop.id?"selected":""}>${loopName(loop)}</option>`).join("");
+}
 function renderFilters(){
-  const F=FILTERTXT[LANG], C=CONFLABEL[LANG];
+  const F=FILTERTXT[LANG], C=CONFLABEL[LANG], T=LOOPTXT[LANG];
   const confs=CONF_FILTERS.map(c=>filterChip("conf",c,C[c],`border-color:${CONFHEX[c]}66`)).join("");
   const pols=POL_FILTERS.map(p=>filterChip("pol",p,p==="+"?F.plus:F.minus)).join("");
   const chains=CHAIN_FILTERS.map(c=>filterChip("chain",c,CHAINLABEL[LANG][c]||`#${c}`)).join("");
   document.getElementById("filters").innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
     <b>${F.title}</b><button onclick="resetFilters()">${F.reset}</button></div>
+    <div class="loopControl"><b>${T.choose}</b><select id="loopSelect" onchange="selectLoop(this.value)">${loopOptionsHTML()}</select>
+      <div class="loopKey"><span><span class="loopDot" style="background:${LOOP_COLOR.reinforcing}"></span> ${T.reinforcing}</span>
+      <span><span class="loopDot" style="background:${LOOP_COLOR.balancing}"></span> ${T.balancing}</span></div></div>
     <div><b>${F.conf}</b><div class="fg">${confs}</div></div>
     <div><b>${F.pol}</b><div class="fg">${pols}</div></div>
     <div><b>${F.chain}</b><div class="fg">${chains}</div></div>`;
+}
+function edgeIndexByPair(f,t){return EDGES.findIndex(e=>e.f===f&&e.t===t);}
+function loopSets(loop){
+  const nodes=new Set(), edges=new Set();
+  loop.edges.forEach(([f,t])=>{
+    const ei=edgeIndexByPair(f,t);
+    if(ei>-1){edges.add(ei);nodes.add(f);nodes.add(t);}
+  });
+  return {nodes,edges};
+}
+function activeLoopEdges(){
+  const loop=LOOPS.find(l=>l.id===activeLoopId);
+  return loop?loopSets(loop).edges:new Set();
+}
+function syncLoopSelect(){
+  const select=document.getElementById("loopSelect");
+  if(select) select.value=activeLoopId;
 }
 function edgeVisible(e){
   const chain=String(NODES[e.f]?.chain);
   return filter.conf.has(e.conf)&&filter.pol.has(e.pol)&&filter.chain.has(chain);
 }
 function applyFilters(){
-  const connected=new Set(), active=filterActive();
+  const connected=new Set(), active=filterActive(), forced=activeLoopEdges();
   EDGES.forEach((e,ei)=>{
-    const visible=edgeVisible(e);
+    const visible=edgeVisible(e)||forced.has(ei);
     document.querySelectorAll(`[data-ei="${ei}"]`).forEach(part=>{part.style.display=visible?"":"none";});
     if(visible){connected.add(e.f);connected.add(e.t);}
   });
@@ -449,6 +522,33 @@ function toggleFilter(group,value,checked){
 function resetFilters(){
   filter=defaultFilter();
   saveFilter(); renderFilters(); applyFilters();
+}
+function loopPathText(loop){
+  const ids=loop.edges.map(edge=>edge[0]);
+  ids.push(loop.edges[loop.edges.length-1][1]);
+  return ids.join(" → ");
+}
+function showLoop(loop){
+  const T=LOOPTXT[LANG], kind=T[loop.kind];
+  const tint=LOOP_COLOR[loop.kind];
+  let h=`<div class="title">${loopName(loop)}</div>`;
+  h+=`<span class="tag" style="background:${tint}33;color:${tint}">${T.kind}: ${kind}</span>`;
+  h+=`<div class="row"><div class="k">${T.path}</div>${loopPathText(loop)}</div>`;
+  h+=`<div class="row"><div class="k">${T.mechanism}</div>${loopNote(loop)}</div>`;
+  document.getElementById("detail").innerHTML=h;
+}
+function selectLoop(id){
+  activeLoopId=id;
+  syncLoopSelect();
+  document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint").forEach(node=>node.classList.remove("dim","hot","loopTint"));
+  if(!id){clearDetail();return;}
+  const loop=LOOPS.find(l=>l.id===id);
+  if(!loop){clearDetail();return;}
+  const {nodes,edges}=loopSets(loop);
+  focusId=null; focusEdgeId=null;
+  highlight({nodes,edges,tint:LOOP_COLOR[loop.kind]});
+  applyFilters();
+  showLoop(loop);
 }
 
 const NS="http://www.w3.org/2000/svg";
@@ -502,17 +602,25 @@ for(const c in CONFHEX){
 svg.appendChild(defs);
 const gEdges=el("g");gRoot.appendChild(gEdges);
 const gNodes=el("g");gRoot.appendChild(gNodes);
-let focusId=null, focusEdgeId=null;
+let focusId=null, focusEdgeId=null, activeLoopId="";
 
 function setClass(node,cls,on){node.classList.toggle(cls,!!on);}
 function clearHighlight(){
-  focusId=null; focusEdgeId=null;
-  document.querySelectorAll("#stage .dim,#stage .hot").forEach(node=>node.classList.remove("dim","hot"));
+  focusId=null; focusEdgeId=null; activeLoopId="";
+  document.documentElement.style.removeProperty("--focus-glow");
+  document.documentElement.style.removeProperty("--loop-tint");
+  document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint").forEach(node=>node.classList.remove("dim","hot","loopTint"));
+  syncLoopSelect(); applyFilters();
 }
 function highlight({nodes=new Set(),edges=new Set(),tint=null}={}){
   const hasFocus=nodes.size>0||edges.size>0;
-  if(tint) document.documentElement.style.setProperty("--focus-glow",tint);
-  else document.documentElement.style.removeProperty("--focus-glow");
+  if(tint){
+    document.documentElement.style.setProperty("--focus-glow",tint);
+    document.documentElement.style.setProperty("--loop-tint",tint);
+  } else {
+    document.documentElement.style.removeProperty("--focus-glow");
+    document.documentElement.style.removeProperty("--loop-tint");
+  }
   document.querySelectorAll(".nodeBox").forEach(node=>{
     const hot=hasFocus&&nodes.has(node.dataset.id);
     setClass(node,"hot",hot);
@@ -521,10 +629,12 @@ function highlight({nodes=new Set(),edges=new Set(),tint=null}={}){
   document.querySelectorAll(".edge,.ehit,.polg").forEach(edge=>{
     const hot=hasFocus&&edges.has(Number(edge.dataset.ei));
     setClass(edge,"hot",hot&&!edge.classList.contains("ehit"));
+    setClass(edge,"loopTint",hot&&!!tint&&!edge.classList.contains("ehit"));
     setClass(edge,"dim",hasFocus&&!hot);
   });
 }
 function focusNode(id){
+  activeLoopId=""; syncLoopSelect(); applyFilters();
   focusId=id; focusEdgeId=null;
   const nodes=new Set([id]), edges=new Set();
   EDGES.forEach((edge,i)=>{
@@ -540,6 +650,7 @@ function edgeIndex(edge){
     (candidate.f===edge.f&&candidate.t===edge.t&&candidate.mech===edge.mech&&candidate.pol===edge.pol));
 }
 function focusEdge(edge,ei=edgeIndex(edge)){
+  activeLoopId=""; syncLoopSelect(); applyFilters();
   focusId=null; focusEdgeId=ei;
   const nodes=new Set([edge.f,edge.t]), edges=new Set();
   if(ei>-1) edges.add(ei);
