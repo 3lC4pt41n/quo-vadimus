@@ -31,10 +31,14 @@
   .nodeBox rect{transition:filter .15s, stroke-width .15s}
   .nodeBox:hover rect{filter:brightness(1.18)}
   .dim{opacity:.12}
+  .nodeBox[data-degree-tier="mid"]{filter:drop-shadow(0 0 4px rgba(232,234,237,.16))}
+  .nodeBox[data-degree-tier="hub"]{filter:drop-shadow(0 0 8px rgba(232,234,237,.28))}
   .nodeBox.hot,.edge.hot,.polg.hot{filter:drop-shadow(0 0 7px var(--focus-glow))}
-  .nodeBox.hot rect{stroke-width:3.2}
+  .nodeBox.hot rect{stroke-width:3.8}
   .nlabel{font-size:11.5px;line-height:1.18;color:var(--ink);padding:6px 8px;
     height:100%;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:550;overflow:hidden}
+  .nodeBox[data-degree-tier="mid"] .nlabel{font-weight:620}
+  .nodeBox[data-degree-tier="hub"] .nlabel{font-weight:720}
   .badge{font-size:11px;font-weight:700}
   .edge{fill:none;stroke-width:2}
   .edge.hot{stroke-width:3.4}
@@ -336,10 +340,12 @@ function legendHTML(){
   const L=LANG==='de'
    ?{conf:"Konfidenz (Kantenfarbe)",b:"belegt",p:"plausibel",u:"umstritten",
      pol:"Polarität (Vorzeichen + Linie)",plus:"gleichgerichtet (mehr → mehr)",minus:"gegengerichtet (mehr → weniger)",loop:"gebogen = Rückkopplung",
-     nodes:"Knoten",nl:"◇ Verzweigung · ◎ Konvergenz · ★ Kipp-Variable · 🔒 verriegelt · ⊙ Substrat"}
+     nodes:"Knoten",nl:"◇ Verzweigung · ◎ Konvergenz · ★ Kipp-Variable · 🔒 verriegelt · ⊙ Substrat",
+     hub:"Dickerer Rahmen = stärker vernetzter Hub"}
    :{conf:"Confidence (edge color)",b:"evidenced",p:"plausible",u:"contested",
      pol:"Polarity (sign + line)",plus:"same-direction (more → more)",minus:"opposite-direction (more → less)",loop:"curved = feedback",
-     nodes:"Nodes",nl:"◇ branch · ◎ convergence · ★ tipping · 🔒 locked · ⊙ substrate"};
+     nodes:"Nodes",nl:"◇ branch · ◎ convergence · ★ tipping · 🔒 locked · ⊙ substrate",
+     hub:"Thicker frame = more connected hub"};
   return `<div style="margin-bottom:6px"><b>${L.conf}</b></div>
    <div class="li"><span class="sw" style="border-color:var(--belegt)"></span> ${L.b}</div>
    <div class="li"><span class="sw" style="border-color:var(--plausibel)"></span> ${L.p}</div>
@@ -349,7 +355,8 @@ function legendHTML(){
    <div class="li"><span class="sw" style="border-color:var(--muted);border-top-style:dashed"></span> <b>−</b> ${L.minus}</div>
    <div class="li"><span class="sw" style="border-color:var(--muted);border-top-style:dotted"></span> ↺ ${L.loop}</div>
    <div style="margin:8px 0 4px"><b>${L.nodes}</b></div>
-   <div class="li">${L.nl}</div>`;
+   <div class="li">${L.nl}</div>
+   <div class="li">${L.hub}</div>`;
 }
 
 const NS="http://www.w3.org/2000/svg";
@@ -375,6 +382,21 @@ const TYPE={
   locked:{fill:"#1a1c20",stroke:"#5b6270",badge:"🔒",dash:"5 4"},
   premise:{fill:"#241a2e",stroke:"#a07bc8",badge:"⊙",glow:true}
 };
+const NODE_DEGREE=Object.fromEntries(Object.keys(NODES).map(id=>[id,0]));
+EDGES.forEach(e=>{
+  NODE_DEGREE[e.f]=(NODE_DEGREE[e.f]||0)+1;
+  NODE_DEGREE[e.t]=(NODE_DEGREE[e.t]||0)+1;
+});
+const DEGREE_VALUES=Object.values(NODE_DEGREE).sort((a,b)=>b-a);
+const HUB_DEGREE=DEGREE_VALUES[Math.min(4,DEGREE_VALUES.length-1)]||Infinity;
+const MID_DEGREE=Math.max(6,Math.ceil(HUB_DEGREE/2));
+const DEGREE_STYLE={low:{stroke:1.6},mid:{stroke:2.25},hub:{stroke:3.45}};
+function degreeTier(id){
+  const degree=NODE_DEGREE[id]||0;
+  if(degree>=HUB_DEGREE) return "hub";
+  if(degree>=MID_DEGREE) return "mid";
+  return "low";
+}
 
 let view={x:0,y:0,k:1};
 const gRoot=el("g");
@@ -471,8 +493,10 @@ function drawNodes(){
   gNodes.textContent="";
   for(const id in NODES){
     const n=NODES[id], t=TYPE[n.type];
-    const g=el("g",{class:"nodeBox",transform:`translate(${n.x},${n.y})`,"data-id":id});
-    const rect=el("rect",{width:NW,height:NH,rx:11,fill:t.fill,stroke:t.stroke,"stroke-width":n.type==="convergence"?3:1.6});
+    const degree=NODE_DEGREE[id]||0, tier=degreeTier(id);
+    const strokeWidth=Math.max(n.type==="convergence"?3:1.6,DEGREE_STYLE[tier].stroke);
+    const g=el("g",{class:"nodeBox",transform:`translate(${n.x},${n.y})`,"data-id":id,"data-degree":degree,"data-degree-tier":tier});
+    const rect=el("rect",{width:NW,height:NH,rx:11,fill:t.fill,stroke:t.stroke,"stroke-width":strokeWidth});
     if(t.dash) rect.setAttribute("stroke-dasharray",t.dash);
     if(t.glow) rect.setAttribute("filter","drop-shadow(0 0 7px rgba(62,166,107,.55))");
     g.appendChild(rect);
