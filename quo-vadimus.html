@@ -69,6 +69,19 @@
 	    border-radius:6px;padding:4px 8px;font-size:11px}
 	  .loopKey{display:flex;gap:10px;flex-wrap:wrap;margin-top:5px}
 	  .loopDot{width:9px;height:9px;border-radius:50%;display:inline-block}
+	  .routeControl{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}
+	  .routeButtons{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
+	  .routeBtn{background:#222732;color:var(--ink);border:1px solid var(--line);
+	    border-radius:6px;padding:4px 8px;font-size:11px;font-weight:650;cursor:pointer}
+	  .routeBtn:hover,.routeBtn.active{background:#2a3140;border-color:var(--route-color);
+	    box-shadow:inset 0 0 0 1px var(--route-color)}
+	  .edge.routeStep{stroke-width:4.6}
+	  .nodeBox.routeStep rect{stroke-width:4.4}
+	  .polg.routeStep circle{stroke-width:2.6}
+	  .routeStep{animation:routePulse .7s ease-in-out}
+	  @keyframes routePulse{0%,100%{filter:drop-shadow(0 0 3px var(--focus-glow))}
+	    50%{filter:drop-shadow(0 0 13px var(--focus-glow))}}
+	  @media (prefers-reduced-motion:reduce){.routeStep{animation:none}}
   .filterPanel label{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);
     border-radius:6px;padding:3px 6px;background:#1d222c;cursor:pointer;white-space:nowrap}
   .filterPanel input{margin:0;accent-color:#7fb3ff}
@@ -399,6 +412,23 @@ const LOOPS=[
    note:"Radikalisierung erzeugt Umverteilung über Elitenangst; Absicherung dämpft C und damit die Radikalisierung.",
    noteEn:"Radicalization produces redistribution through elite fear; protection dampens C and therefore radicalization."}
 ];
+const ROUTETXT={
+  de:{choose:"Route nachzeichnen",kind:"Route",path:"Pfad",mechanism:"Mechanismus",
+      utopia:"Utopie",dystopia:"Dystopie"},
+  en:{choose:"Trace route",kind:"Route",path:"Path",mechanism:"Mechanism",
+      utopia:"utopia",dystopia:"dystopia"}
+};
+const ROUTE_COLOR={utopia:"#78c86f",dystopia:"#e05a5a"};
+const ROUTES=[
+  {id:"utopia",kind:"utopia",name:"Utopie-Route",nameEn:"Utopia route",
+   edges:[["DIST","SEC"],["SEC","P"],["P","LK"],["LK","Dp"]],
+   note:"Breit verteilter Überschuss hebt Sicherheit; Sicherheit weitet den Kreis; der weite Kreis schwächt den Riegel und öffnet Stabilisierung.",
+   noteEn:"Broadly distributed surplus raises security; security widens the circle; the wide circle weakens the lock and opens stabilization."},
+  {id:"dystopia",kind:"dystopia",name:"Dystopie-Route",nameEn:"Dystopia route",
+   edges:[["Au","DIST"],["DIST","C"],["C","SOZ"],["SOZ","SEC"],["SEC","P"],["P","ORD"]],
+   note:"Knappe Aufwertung drückt Verteilung; gekaperter Überfluss nährt Präkarisierung und soziale Erosion; Sicherheit fällt, der Kreis verengt sich bis zur Machtordnung.",
+   noteEn:"Scarce upgrading depresses distribution; captured abundance feeds precarity and social erosion; security falls, the circle contracts into power-based order."}
+];
 const CHAINLABEL={
   de:{0:"Substrat",1:"Arbeit/KI",2:"Steuer/LK",3:"Machtordnung",4:"Schulden",5:"Ökologie",6:"Überschuss",7:"Demografie",8:"Soziales",9:"Institutionen",10:"Eigentum",11:"Finanzfragilität",13:"Cyber"},
   en:{0:"substrate",1:"work/AI",2:"tax/location",3:"power order",4:"debt",5:"ecology",6:"surplus",7:"demography",8:"social",9:"institutions",10:"ownership",11:"finance",13:"cyber"}
@@ -428,11 +458,13 @@ function legendHTML(){
    ?{conf:"Konfidenz (Kantenfarbe)",b:"belegt",p:"plausibel",u:"umstritten",
      pol:"Polarität (Vorzeichen + Linie)",plus:"gleichgerichtet (mehr → mehr)",minus:"gegengerichtet (mehr → weniger)",loop:"gebogen = Rückkopplung",
      nodes:"Knoten",nl:"◇ Verzweigung · ◎ Konvergenz · ★ Kipp-Variable · 🔒 verriegelt · ⊙ Substrat",
-     hub:"Dickerer Rahmen = stärker vernetzter Hub",loopColors:"Schleifenfarbe",re:"rot = verstärkend",ba:"blau = balancierend"}
+     hub:"Dickerer Rahmen = stärker vernetzter Hub",loopColors:"Schleifenfarbe",re:"rot = verstärkend",ba:"blau = balancierend",
+     routeColors:"Routenfarbe",ut:"grün = Utopie",dy:"rot = Dystopie"}
    :{conf:"Confidence (edge color)",b:"evidenced",p:"plausible",u:"contested",
      pol:"Polarity (sign + line)",plus:"same-direction (more → more)",minus:"opposite-direction (more → less)",loop:"curved = feedback",
      nodes:"Nodes",nl:"◇ branch · ◎ convergence · ★ tipping · 🔒 locked · ⊙ substrate",
-     hub:"Thicker frame = more connected hub",loopColors:"Loop color",re:"red = reinforcing",ba:"blue = balancing"};
+     hub:"Thicker frame = more connected hub",loopColors:"Loop color",re:"red = reinforcing",ba:"blue = balancing",
+     routeColors:"Route color",ut:"green = utopia",dy:"red = dystopia"};
   return `<div style="margin-bottom:6px"><b>${L.conf}</b></div>
    <div class="li"><span class="sw" style="border-color:var(--belegt)"></span> ${L.b}</div>
    <div class="li"><span class="sw" style="border-color:var(--plausibel)"></span> ${L.p}</div>
@@ -446,7 +478,10 @@ function legendHTML(){
    <div class="li">${L.hub}</div>
    <div style="margin:8px 0 4px"><b>${L.loopColors}</b></div>
    <div class="li"><span class="sw" style="border-color:${LOOP_COLOR.reinforcing}"></span> ${L.re}</div>
-   <div class="li"><span class="sw" style="border-color:${LOOP_COLOR.balancing}"></span> ${L.ba}</div>`;
+   <div class="li"><span class="sw" style="border-color:${LOOP_COLOR.balancing}"></span> ${L.ba}</div>
+   <div style="margin:8px 0 4px"><b>${L.routeColors}</b></div>
+   <div class="li"><span class="sw" style="border-color:${ROUTE_COLOR.utopia}"></span> ${L.ut}</div>
+   <div class="li"><span class="sw" style="border-color:${ROUTE_COLOR.dystopia}"></span> ${L.dy}</div>`;
 }
 function saveFilter(){
   try{localStorage.setItem(FILTER_KEY,JSON.stringify({
@@ -463,18 +498,25 @@ function filterChip(group,value,label,extraStyle=""){
 }
 function loopName(loop){return LANG==="en"&&loop.nameEn?loop.nameEn:loop.name;}
 function loopNote(loop){return LANG==="en"&&loop.noteEn?loop.noteEn:loop.note;}
+function routeName(route){return LANG==="en"&&route.nameEn?route.nameEn:route.name;}
+function routeNote(route){return LANG==="en"&&route.noteEn?route.noteEn:route.note;}
 function loopOptionsHTML(){
   const T=LOOPTXT[LANG];
   return `<option value="">${T.none}</option>`+LOOPS.map(loop=>
     `<option value="${loop.id}" ${activeLoopId===loop.id?"selected":""}>${loopName(loop)}</option>`).join("");
 }
+function routeButtonsHTML(){
+  return ROUTES.map(route=>`<button class="routeBtn ${activeRouteId===route.id?"active":""}" data-route-id="${route.id}"
+    style="--route-color:${ROUTE_COLOR[route.kind]}" onclick="selectRoute('${route.id}')">${routeName(route)}</button>`).join("");
+}
 function renderFilters(){
-  const F=FILTERTXT[LANG], C=CONFLABEL[LANG], T=LOOPTXT[LANG];
+  const F=FILTERTXT[LANG], C=CONFLABEL[LANG], T=LOOPTXT[LANG], R=ROUTETXT[LANG];
   const confs=CONF_FILTERS.map(c=>filterChip("conf",c,C[c],`border-color:${CONFHEX[c]}66`)).join("");
   const pols=POL_FILTERS.map(p=>filterChip("pol",p,p==="+"?F.plus:F.minus)).join("");
   const chains=CHAIN_FILTERS.map(c=>filterChip("chain",c,CHAINLABEL[LANG][c]||`#${c}`)).join("");
   document.getElementById("filters").innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
     <b>${F.title}</b><button onclick="resetFilters()">${F.reset}</button></div>
+    <div class="routeControl"><b>${R.choose}</b><div class="routeButtons">${routeButtonsHTML()}</div></div>
     <div class="loopControl"><b>${T.choose}</b><select id="loopSelect" onchange="selectLoop(this.value)">${loopOptionsHTML()}</select>
       <div class="loopKey"><span><span class="loopDot" style="background:${LOOP_COLOR.reinforcing}"></span> ${T.reinforcing}</span>
       <span><span class="loopDot" style="background:${LOOP_COLOR.balancing}"></span> ${T.balancing}</span></div></div>
@@ -491,20 +533,35 @@ function loopSets(loop){
   });
   return {nodes,edges};
 }
+function routeSets(route){return loopSets(route);}
 function activeLoopEdges(){
   const loop=LOOPS.find(l=>l.id===activeLoopId);
   return loop?loopSets(loop).edges:new Set();
 }
+function activeRouteEdges(){
+  const route=ROUTES.find(r=>r.id===activeRouteId);
+  return route?routeSets(route).edges:new Set();
+}
+function activeForcedEdges(){
+  const edges=activeLoopEdges();
+  activeRouteEdges().forEach(ei=>edges.add(ei));
+  return edges;
+}
 function syncLoopSelect(){
   const select=document.getElementById("loopSelect");
   if(select) select.value=activeLoopId;
+}
+function syncRouteButtons(){
+  document.querySelectorAll(".routeBtn").forEach(btn=>{
+    setClass(btn,"active",btn.dataset.routeId===activeRouteId);
+  });
 }
 function edgeVisible(e){
   const chain=String(NODES[e.f]?.chain);
   return filter.conf.has(e.conf)&&filter.pol.has(e.pol)&&filter.chain.has(chain);
 }
 function applyFilters(){
-  const connected=new Set(), active=filterActive(), forced=activeLoopEdges();
+  const connected=new Set(), active=filterActive(), forced=activeForcedEdges();
   EDGES.forEach((e,ei)=>{
     const visible=edgeVisible(e)||forced.has(ei);
     document.querySelectorAll(`[data-ei="${ei}"]`).forEach(part=>{part.style.display=visible?"":"none";});
@@ -537,10 +594,49 @@ function showLoop(loop){
   h+=`<div class="row"><div class="k">${T.mechanism}</div>${loopNote(loop)}</div>`;
   document.getElementById("detail").innerHTML=h;
 }
+function showRoute(route){
+  const T=ROUTETXT[LANG], kind=T[route.kind];
+  const tint=ROUTE_COLOR[route.kind];
+  let h=`<div class="title">${routeName(route)}</div>`;
+  h+=`<span class="tag" style="background:${tint}33;color:${tint}">${T.kind}: ${kind}</span>`;
+  h+=`<div class="row"><div class="k">${T.path}</div>${loopPathText(route)}</div>`;
+  h+=`<div class="row"><div class="k">${T.mechanism}</div>${routeNote(route)}</div>`;
+  document.getElementById("detail").innerHTML=h;
+}
+function clearRouteSequence(){
+  routeTimers.forEach(timer=>clearTimeout(timer));
+  routeTimers=[];
+  document.querySelectorAll("#stage .routeStep").forEach(node=>node.classList.remove("routeStep"));
+}
+function prefersReducedMotion(){
+  return window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+function traceRoute(route){
+  clearRouteSequence();
+  if(prefersReducedMotion()) return;
+  const stepMs=520;
+  route.edges.forEach(([f,t],step)=>{
+    const ei=edgeIndexByPair(f,t);
+    if(ei<0) return;
+    routeTimers.push(setTimeout(()=>{
+      document.querySelectorAll("#stage .routeStep").forEach(node=>node.classList.remove("routeStep"));
+      document.querySelectorAll(`[data-ei="${ei}"]`).forEach(part=>{
+        if(!part.classList.contains("ehit")) part.classList.add("routeStep");
+      });
+      document.querySelectorAll(".nodeBox").forEach(node=>{
+        if(node.dataset.id===f||node.dataset.id===t) node.classList.add("routeStep");
+      });
+    },step*stepMs));
+  });
+  routeTimers.push(setTimeout(clearRouteSequence,route.edges.length*stepMs+900));
+}
 function selectLoop(id){
   activeLoopId=id;
+  activeRouteId="";
+  clearRouteSequence();
   syncLoopSelect();
-  document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint").forEach(node=>node.classList.remove("dim","hot","loopTint"));
+  syncRouteButtons();
+  document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint,#stage .routeStep").forEach(node=>node.classList.remove("dim","hot","loopTint","routeStep"));
   if(!id){clearDetail();return;}
   const loop=LOOPS.find(l=>l.id===id);
   if(!loop){clearDetail();return;}
@@ -549,6 +645,23 @@ function selectLoop(id){
   highlight({nodes,edges,tint:LOOP_COLOR[loop.kind]});
   applyFilters();
   showLoop(loop);
+}
+function selectRoute(id){
+  activeRouteId=id;
+  activeLoopId="";
+  clearRouteSequence();
+  syncLoopSelect();
+  syncRouteButtons();
+  document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint,#stage .routeStep").forEach(node=>node.classList.remove("dim","hot","loopTint","routeStep"));
+  if(!id){clearDetail();return;}
+  const route=ROUTES.find(r=>r.id===id);
+  if(!route){clearDetail();return;}
+  const {nodes,edges}=routeSets(route);
+  focusId=null; focusEdgeId=null;
+  highlight({nodes,edges,tint:ROUTE_COLOR[route.kind]});
+  applyFilters();
+  showRoute(route);
+  traceRoute(route);
 }
 
 const NS="http://www.w3.org/2000/svg";
@@ -602,15 +715,16 @@ for(const c in CONFHEX){
 svg.appendChild(defs);
 const gEdges=el("g");gRoot.appendChild(gEdges);
 const gNodes=el("g");gRoot.appendChild(gNodes);
-let focusId=null, focusEdgeId=null, activeLoopId="";
+let focusId=null, focusEdgeId=null, activeLoopId="", activeRouteId="", routeTimers=[];
 
 function setClass(node,cls,on){node.classList.toggle(cls,!!on);}
 function clearHighlight(){
-  focusId=null; focusEdgeId=null; activeLoopId="";
+  focusId=null; focusEdgeId=null; activeLoopId=""; activeRouteId="";
+  clearRouteSequence();
   document.documentElement.style.removeProperty("--focus-glow");
   document.documentElement.style.removeProperty("--loop-tint");
-  document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint").forEach(node=>node.classList.remove("dim","hot","loopTint"));
-  syncLoopSelect(); applyFilters();
+  document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint,#stage .routeStep").forEach(node=>node.classList.remove("dim","hot","loopTint","routeStep"));
+  syncLoopSelect(); syncRouteButtons(); applyFilters();
 }
 function highlight({nodes=new Set(),edges=new Set(),tint=null}={}){
   const hasFocus=nodes.size>0||edges.size>0;
@@ -634,7 +748,7 @@ function highlight({nodes=new Set(),edges=new Set(),tint=null}={}){
   });
 }
 function focusNode(id){
-  activeLoopId=""; syncLoopSelect(); applyFilters();
+  activeLoopId=""; activeRouteId=""; clearRouteSequence(); syncLoopSelect(); syncRouteButtons(); applyFilters();
   focusId=id; focusEdgeId=null;
   const nodes=new Set([id]), edges=new Set();
   EDGES.forEach((edge,i)=>{
@@ -650,7 +764,7 @@ function edgeIndex(edge){
     (candidate.f===edge.f&&candidate.t===edge.t&&candidate.mech===edge.mech&&candidate.pol===edge.pol));
 }
 function focusEdge(edge,ei=edgeIndex(edge)){
-  activeLoopId=""; syncLoopSelect(); applyFilters();
+  activeLoopId=""; activeRouteId=""; clearRouteSequence(); syncLoopSelect(); syncRouteButtons(); applyFilters();
   focusId=null; focusEdgeId=ei;
   const nodes=new Set([edge.f,edge.t]), edges=new Set();
   if(ei>-1) edges.add(ei);
