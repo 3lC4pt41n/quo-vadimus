@@ -52,6 +52,11 @@
   #side h2{font-size:13px;margin:0 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:650}
   #side .title{font-size:16px;font-weight:650;margin:2px 0 10px}
   .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;margin:0 6px 6px 0}
+  .traceActions{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 10px}
+  .traceBtn{background:#222732;color:var(--ink);border:1px solid var(--line);
+    border-radius:6px;padding:4px 8px;font-size:11px;font-weight:650;cursor:pointer}
+  .traceBtn:hover,.traceBtn.active{background:#2a3140;border-color:#7fb3ff}
+  .traceSummary{color:var(--muted);font-size:11.5px;margin:-3px 0 10px}
   .row{padding:10px 0;border-top:1px solid var(--line)}
   .row .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
   .mech{font-style:italic}
@@ -418,6 +423,10 @@ const ROUTETXT={
   en:{choose:"Trace route",kind:"Route",path:"Path",mechanism:"Mechanism",
       utopia:"utopia",dystopia:"dystopia"}
 };
+const TRACETXT={
+  de:{upstream:"Ursachen",downstream:"Folgen",active:"Hervorgehoben",nodes:"Knoten",edges:"Kanten"},
+  en:{upstream:"Causes",downstream:"Effects",active:"Highlighted",nodes:"nodes",edges:"edges"}
+};
 const ROUTE_COLOR={utopia:"#78c86f",dystopia:"#e05a5a"};
 const ROUTES=[
   {id:"utopia",kind:"utopia",name:"Utopie-Route",nameEn:"Utopia route",
@@ -509,6 +518,13 @@ function routeButtonsHTML(){
   return ROUTES.map(route=>`<button class="routeBtn ${activeRouteId===route.id?"active":""}" data-route-id="${route.id}"
     style="--route-color:${ROUTE_COLOR[route.kind]}" onclick="selectRoute('${route.id}')">${routeName(route)}</button>`).join("");
 }
+function traceActionsHTML(id){
+  const T=TRACETXT[LANG];
+  const button=(direction,arrow)=>`<button class="traceBtn" data-trace-id="${id}" data-trace-dir="${direction}"
+    onclick="traceFrom('${id}','${direction}');event.stopPropagation()">${arrow} ${T[direction]}</button>`;
+  return `<div class="traceActions">${button("upstream","↑")}${button("downstream","↓")}</div>
+    <div class="traceSummary" id="traceSummary" hidden></div>`;
+}
 function renderFilters(){
   const F=FILTERTXT[LANG], C=CONFLABEL[LANG], T=LOOPTXT[LANG], R=ROUTETXT[LANG];
   const confs=CONF_FILTERS.map(c=>filterChip("conf",c,C[c],`border-color:${CONFHEX[c]}66`)).join("");
@@ -534,6 +550,24 @@ function loopSets(loop){
   return {nodes,edges};
 }
 function routeSets(route){return loopSets(route);}
+function traceSets(id,direction){
+  const nodes=new Set([id]), edges=new Set(), visited=new Set([id]), queue=[id];
+  while(queue.length){
+    const current=queue.shift();
+    EDGES.forEach((edge,ei)=>{
+      const follows=direction==="downstream"?edge.f===current:edge.t===current;
+      if(!follows) return;
+      const next=direction==="downstream"?edge.t:edge.f;
+      edges.add(ei);
+      nodes.add(next);
+      if(!visited.has(next)){
+        visited.add(next);
+        queue.push(next);
+      }
+    });
+  }
+  return {nodes,edges};
+}
 function activeLoopEdges(){
   const loop=LOOPS.find(l=>l.id===activeLoopId);
   return loop?loopSets(loop).edges:new Set();
@@ -542,9 +576,13 @@ function activeRouteEdges(){
   const route=ROUTES.find(r=>r.id===activeRouteId);
   return route?routeSets(route).edges:new Set();
 }
+function activeTraceEdges(){
+  return activeTrace?traceSets(activeTrace.id,activeTrace.direction).edges:new Set();
+}
 function activeForcedEdges(){
   const edges=activeLoopEdges();
   activeRouteEdges().forEach(ei=>edges.add(ei));
+  activeTraceEdges().forEach(ei=>edges.add(ei));
   return edges;
 }
 function syncLoopSelect(){
@@ -554,6 +592,12 @@ function syncLoopSelect(){
 function syncRouteButtons(){
   document.querySelectorAll(".routeBtn").forEach(btn=>{
     setClass(btn,"active",btn.dataset.routeId===activeRouteId);
+  });
+}
+function syncTraceButtons(){
+  document.querySelectorAll(".traceBtn").forEach(btn=>{
+    const active=activeTrace&&btn.dataset.traceId===activeTrace.id&&btn.dataset.traceDir===activeTrace.direction;
+    setClass(btn,"active",active);
   });
 }
 function edgeVisible(e){
@@ -603,6 +647,12 @@ function showRoute(route){
   h+=`<div class="row"><div class="k">${T.mechanism}</div>${routeNote(route)}</div>`;
   document.getElementById("detail").innerHTML=h;
 }
+function showTraceSummary(result,direction){
+  const T=TRACETXT[LANG], summary=document.getElementById("traceSummary");
+  if(!summary) return;
+  summary.hidden=false;
+  summary.textContent=`${T.active}: ${T[direction]} · ${result.nodes.size} ${T.nodes} · ${result.edges.size} ${T.edges}`;
+}
 function clearRouteSequence(){
   routeTimers.forEach(timer=>clearTimeout(timer));
   routeTimers=[];
@@ -633,9 +683,11 @@ function traceRoute(route){
 function selectLoop(id){
   activeLoopId=id;
   activeRouteId="";
+  activeTrace=null;
   clearRouteSequence();
   syncLoopSelect();
   syncRouteButtons();
+  syncTraceButtons();
   document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint,#stage .routeStep").forEach(node=>node.classList.remove("dim","hot","loopTint","routeStep"));
   if(!id){clearDetail();return;}
   const loop=LOOPS.find(l=>l.id===id);
@@ -649,9 +701,11 @@ function selectLoop(id){
 function selectRoute(id){
   activeRouteId=id;
   activeLoopId="";
+  activeTrace=null;
   clearRouteSequence();
   syncLoopSelect();
   syncRouteButtons();
+  syncTraceButtons();
   document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint,#stage .routeStep").forEach(node=>node.classList.remove("dim","hot","loopTint","routeStep"));
   if(!id){clearDetail();return;}
   const route=ROUTES.find(r=>r.id===id);
@@ -662,6 +716,21 @@ function selectRoute(id){
   applyFilters();
   showRoute(route);
   traceRoute(route);
+}
+function traceFrom(id,direction){
+  activeLoopId="";
+  activeRouteId="";
+  activeTrace={id,direction};
+  focusId=id;
+  focusEdgeId=null;
+  clearRouteSequence();
+  syncLoopSelect();
+  syncRouteButtons();
+  syncTraceButtons();
+  const result=traceSets(id,direction);
+  highlight(result);
+  applyFilters();
+  showTraceSummary(result,direction);
 }
 
 const NS="http://www.w3.org/2000/svg";
@@ -716,15 +785,17 @@ svg.appendChild(defs);
 const gEdges=el("g");gRoot.appendChild(gEdges);
 const gNodes=el("g");gRoot.appendChild(gNodes);
 let focusId=null, focusEdgeId=null, activeLoopId="", activeRouteId="", routeTimers=[];
+let activeTrace=null;
 
 function setClass(node,cls,on){node.classList.toggle(cls,!!on);}
 function clearHighlight(){
   focusId=null; focusEdgeId=null; activeLoopId=""; activeRouteId="";
+  activeTrace=null;
   clearRouteSequence();
   document.documentElement.style.removeProperty("--focus-glow");
   document.documentElement.style.removeProperty("--loop-tint");
   document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint,#stage .routeStep").forEach(node=>node.classList.remove("dim","hot","loopTint","routeStep"));
-  syncLoopSelect(); syncRouteButtons(); applyFilters();
+  syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); applyFilters();
 }
 function highlight({nodes=new Set(),edges=new Set(),tint=null}={}){
   const hasFocus=nodes.size>0||edges.size>0;
@@ -748,7 +819,7 @@ function highlight({nodes=new Set(),edges=new Set(),tint=null}={}){
   });
 }
 function focusNode(id){
-  activeLoopId=""; activeRouteId=""; clearRouteSequence(); syncLoopSelect(); syncRouteButtons(); applyFilters();
+  activeLoopId=""; activeRouteId=""; activeTrace=null; clearRouteSequence(); syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); applyFilters();
   focusId=id; focusEdgeId=null;
   const nodes=new Set([id]), edges=new Set();
   EDGES.forEach((edge,i)=>{
@@ -764,7 +835,7 @@ function edgeIndex(edge){
     (candidate.f===edge.f&&candidate.t===edge.t&&candidate.mech===edge.mech&&candidate.pol===edge.pol));
 }
 function focusEdge(edge,ei=edgeIndex(edge)){
-  activeLoopId=""; activeRouteId=""; clearRouteSequence(); syncLoopSelect(); syncRouteButtons(); applyFilters();
+  activeLoopId=""; activeRouteId=""; activeTrace=null; clearRouteSequence(); syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); applyFilters();
   focusId=null; focusEdgeId=ei;
   const nodes=new Set([edge.f,edge.t]), edges=new Set();
   if(ei>-1) edges.add(ei);
@@ -823,8 +894,10 @@ function drawNodes(){
     const div=document.createElement("div");
     div.className="nlabel";
     div.innerHTML=(t.badge?`<span class="badge" style="margin-right:5px">${t.badge}</span>`:"")+NL(n);
+    const openNode=ev=>{ev.stopPropagation();showNode(id);};
+    div.addEventListener("click",openNode);
     fo.appendChild(div);g.appendChild(fo);
-    g.addEventListener("click",ev=>{ev.stopPropagation();showNode(id);});
+    g.addEventListener("click",openNode);
     gNodes.appendChild(g);
   }
 }
@@ -855,6 +928,7 @@ function showNode(id){
   const ins=EDGES.filter(e=>e.t===id), outs=EDGES.filter(e=>e.f===id);
   let h=`<div class="title">${NL(n)}</div>`;
   h+=`<span class="tag" style="background:#222732;color:#cdd2da">${TYPELABEL[LANG][n.type]}</span>`;
+  h+=traceActionsHTML(id);
   if(NN(n)) h+=`<div class="row"><div class="k">${U.comment}</div>${NN(n)}</div>`;
   if(outs.length){h+=`<div class="row"><div class="k">${U.affects}</div>`;
     outs.forEach(e=>h+=edgeLine(e,NL(NODES[e.t])));h+=`</div>`;}
