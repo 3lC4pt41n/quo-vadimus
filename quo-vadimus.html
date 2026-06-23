@@ -8,6 +8,7 @@
   :root{
     --bg:#0f1115; --panel:#171a21; --ink:#e8eaed; --muted:#9aa0aa; --line:#2a2f3a;
     --belegt:#3ea66b; --plausibel:#d49a2a; --umstritten:#9b6bd6; --spekulativ:#c0564f;
+    --focus-glow:rgba(255,255,255,.38);
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
@@ -25,13 +26,18 @@
   #stage{flex:1;position:relative;overflow:hidden;cursor:grab}
   #stage.drag{cursor:grabbing}
   svg{width:100%;height:100%;display:block;user-select:none}
+  .nodeBox,.edge,.ehit,.polg{transition:opacity .18s, filter .18s}
   .nodeBox{cursor:pointer}
   .nodeBox rect{transition:filter .15s, stroke-width .15s}
   .nodeBox:hover rect{filter:brightness(1.18)}
+  .dim{opacity:.12}
+  .nodeBox.hot,.edge.hot,.polg.hot{filter:drop-shadow(0 0 7px var(--focus-glow))}
+  .nodeBox.hot rect{stroke-width:3.2}
   .nlabel{font-size:11.5px;line-height:1.18;color:var(--ink);padding:6px 8px;
     height:100%;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:550;overflow:hidden}
   .badge{font-size:11px;font-weight:700}
   .edge{fill:none;stroke-width:2}
+  .edge.hot{stroke-width:3.4}
   .ehit{fill:none;stroke:transparent;stroke-width:16;cursor:pointer}
   .polg text{font-size:11px;font-weight:700}
   #side{width:330px;border-left:1px solid var(--line);background:var(--panel);
@@ -313,11 +319,11 @@ const EDGES = [
 const UI={
   de:{sub:"Wirksystem-Karte · „Wohin gehen wir.“ — klick auf Knoten oder Kante für den Mechanismus",
       detail:"Detail", empty:"Nichts ausgewählt. Klick einen Knoten oder eine Kante.",
-      hint:"Ziehen = verschieben · <kbd>Scroll</kbd> = zoomen.<br>Jede Kante trägt ein Vorzeichen (+/−).",
+      hint:"Klick fokussiert direkte Nachbarn. Ziehen = verschieben · <kbd>Scroll</kbd> = zoomen.<br>Jede Kante trägt ein Vorzeichen (+/−).",
       affects:"Wirkt auf →", caused:"← Bewirkt durch", conf:"Konfidenz", mechh:"Mechanismus (das „weil“)", comment:"Kommentar", beleg:"Beleg"},
   en:{sub:"System-of-effects map · „Where are we going.“ — click a node or edge for the mechanism",
       detail:"Detail", empty:"Nothing selected. Click a node or an edge.",
-      hint:"Drag = pan · <kbd>Scroll</kbd> = zoom.<br>Every edge carries a sign (+/−).",
+      hint:"Click focuses direct neighbors. Drag = pan · <kbd>Scroll</kbd> = zoom.<br>Every edge carries a sign (+/−).",
       affects:"Affects →", caused:"← Caused by", conf:"Confidence", mechh:"Mechanism (the „because“)", comment:"Comment", beleg:"Evidence"}
 };
 const CONFLABEL={de:{belegt:"belegt",plausibel:"plausibel",umstritten:"umstritten",spekulativ:"spekulativ"},
@@ -381,6 +387,49 @@ for(const c in CONFHEX){
 svg.appendChild(defs);
 const gEdges=el("g");gRoot.appendChild(gEdges);
 const gNodes=el("g");gRoot.appendChild(gNodes);
+let focusId=null, focusEdgeId=null;
+
+function setClass(node,cls,on){node.classList.toggle(cls,!!on);}
+function clearHighlight(){
+  focusId=null; focusEdgeId=null;
+  document.querySelectorAll("#stage .dim,#stage .hot").forEach(node=>node.classList.remove("dim","hot"));
+}
+function highlight({nodes=new Set(),edges=new Set(),tint=null}={}){
+  const hasFocus=nodes.size>0||edges.size>0;
+  if(tint) document.documentElement.style.setProperty("--focus-glow",tint);
+  else document.documentElement.style.removeProperty("--focus-glow");
+  document.querySelectorAll(".nodeBox").forEach(node=>{
+    const hot=hasFocus&&nodes.has(node.dataset.id);
+    setClass(node,"hot",hot);
+    setClass(node,"dim",hasFocus&&!hot);
+  });
+  document.querySelectorAll(".edge,.ehit,.polg").forEach(edge=>{
+    const hot=hasFocus&&edges.has(Number(edge.dataset.ei));
+    setClass(edge,"hot",hot&&!edge.classList.contains("ehit"));
+    setClass(edge,"dim",hasFocus&&!hot);
+  });
+}
+function focusNode(id){
+  focusId=id; focusEdgeId=null;
+  const nodes=new Set([id]), edges=new Set();
+  EDGES.forEach((edge,i)=>{
+    if(edge.f===id||edge.t===id){
+      edges.add(i);
+      nodes.add(edge.f); nodes.add(edge.t);
+    }
+  });
+  highlight({nodes,edges});
+}
+function edgeIndex(edge){
+  return EDGES.findIndex(candidate=>candidate===edge||
+    (candidate.f===edge.f&&candidate.t===edge.t&&candidate.mech===edge.mech&&candidate.pol===edge.pol));
+}
+function focusEdge(edge,ei=edgeIndex(edge)){
+  focusId=null; focusEdgeId=ei;
+  const nodes=new Set([edge.f,edge.t]), edges=new Set();
+  if(ei>-1) edges.add(ei);
+  highlight({nodes,edges});
+}
 
 function center(id){const n=NODES[id];return {x:n.x+NW/2,y:n.y+NH/2};}
 function clip(cx,cy,bx,by){
@@ -393,7 +442,7 @@ function clip(cx,cy,bx,by){
 }
 function drawEdges(){
   gEdges.textContent="";
-  EDGES.forEach((e)=>{
+  EDGES.forEach((e,ei)=>{
     const a=center(e.f), b=center(e.t);
     const p1=clip(a.x,a.y,b.x,b.y), p2=clip(b.x,b.y,a.x,a.y);
     let d, lx, ly;
@@ -405,16 +454,16 @@ function drawEdges(){
       d=`M${p1.x} ${p1.y} L${p2.x} ${p2.y}`;
       lx=(p1.x+p2.x)/2; ly=(p1.y+p2.y)/2;
     }
-    const path=el("path",{d,class:"edge",stroke:CONF[e.conf],"marker-end":"url(#arw-"+e.conf+")"});
+    const path=el("path",{d,class:"edge",stroke:CONF[e.conf],"marker-end":"url(#arw-"+e.conf+")","data-ei":ei,"data-f":e.f,"data-t":e.t});
     if(e.pol==="-") path.setAttribute("stroke-dasharray","7 5");
     if(e.loop) path.setAttribute("stroke-dasharray","2 6");
     gEdges.appendChild(path);
-    const gp=el("g",{class:"polg"});
+    const gp=el("g",{class:"polg","data-ei":ei,"data-f":e.f,"data-t":e.t});
     gp.appendChild(el("circle",{cx:lx,cy:ly,r:7.5,fill:"#0f1115",stroke:CONFHEX[e.conf],"stroke-width":1.3}));
     const txt=el("text",{x:lx,y:ly+3.6,"text-anchor":"middle",fill:CONFHEX[e.conf]});
     txt.textContent=e.pol==="+"?"+":"−"; gp.appendChild(txt); gEdges.appendChild(gp);
-    const hit=el("path",{d,class:"ehit"});
-    hit.addEventListener("click",ev=>{ev.stopPropagation();showEdge(e);});
+    const hit=el("path",{d,class:"ehit","data-ei":ei,"data-f":e.f,"data-t":e.t});
+    hit.addEventListener("click",ev=>{ev.stopPropagation();showEdge(e,ei);});
     gEdges.appendChild(hit);
   });
 }
@@ -422,7 +471,7 @@ function drawNodes(){
   gNodes.textContent="";
   for(const id in NODES){
     const n=NODES[id], t=TYPE[n.type];
-    const g=el("g",{class:"nodeBox",transform:`translate(${n.x},${n.y})`});
+    const g=el("g",{class:"nodeBox",transform:`translate(${n.x},${n.y})`,"data-id":id});
     const rect=el("rect",{width:NW,height:NH,rx:11,fill:t.fill,stroke:t.stroke,"stroke-width":n.type==="convergence"?3:1.6});
     if(t.dash) rect.setAttribute("stroke-dasharray",t.dash);
     if(t.glow) rect.setAttribute("filter","drop-shadow(0 0 7px rgba(62,166,107,.55))");
@@ -458,6 +507,7 @@ function linkify(t){return t.replace(/\b(K\d{2}|DE\d{2})\b/g,m=>KREF[m]
   ?`<a href="${KREF[m]}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#7fb3ff;text-decoration:underline">${m}</a>`:m);}
 
 function showNode(id){
+  focusNode(id);
   const n=NODES[id], U=UI[LANG];
   const ins=EDGES.filter(e=>e.t===id), outs=EDGES.filter(e=>e.f===id);
   let h=`<div class="title">${NL(n)}</div>`;
@@ -469,7 +519,8 @@ function showNode(id){
     ins.forEach(e=>h+=edgeLine(e,NL(NODES[e.f]),true));h+=`</div>`;}
   document.getElementById("detail").innerHTML=h;
 }
-function showEdge(e){
+function showEdge(e,ei=edgeIndex(e)){
+  focusEdge(e,ei);
   const U=UI[LANG];
   let h=`<div class="title">${NL(NODES[e.f])} → ${NL(NODES[e.t])}</div>`;
   h+=`<span class="tag" style="background:${CONFHEX[e.conf]}33;color:${CONFHEX[e.conf]}">${U.conf}: ${CONFLABEL[LANG][e.conf]}</span>`;
@@ -486,9 +537,16 @@ function edgeLine(e,other,incoming){
     <div class="mech" style="color:var(--muted);font-size:11.5px;margin:2px 0 0 14px">${m.slice(0,90)}${m.length>90?"…":""}</div>
     ${e.src?`<div style="color:#6f9a6f;font-size:10.5px;margin:2px 0 0 14px">📎 ${linkify(e.src)}</div>`:""}</div>`;
 }
-window.__se=s=>showEdge(JSON.parse(JSON.parse(s)));
-function clearDetail(){document.getElementById("detail").innerHTML=
-  `<div class="empty">${UI[LANG].empty}</div><div class="hint">${UI[LANG].hint}</div>`;}
+function parseEdgePayload(s){
+  const parsed=typeof s==="string"?JSON.parse(s):s;
+  return typeof parsed==="string"?JSON.parse(parsed):parsed;
+}
+window.__se=s=>showEdge(parseEdgePayload(s));
+function clearDetail(){
+  clearHighlight();
+  document.getElementById("detail").innerHTML=
+  `<div class="empty">${UI[LANG].empty}</div><div class="hint">${UI[LANG].hint}</div>`;
+}
 
 function render(){
   document.documentElement.lang=LANG;
