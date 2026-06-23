@@ -4,7 +4,7 @@
 
 A scenario of the future, built as a **system of effects**: not a vibe, not a prophecy, but a directed causal graph you can disagree with at a specific point. Every causal link carries a named mechanism ("because…"), a confidence (evidenced / plausible / contested), and a **sign** (+ same-direction / − opposite-direction).
 
-The interactive map lives in [`quo-vadimus.html`](./quo-vadimus.html) — open it in a browser, click a node or an edge to see the mechanism. State **V0.5**: 54 nodes, 127 signed edges, structurally checked (no dead ends, no dangling references); 33 edges carry source citations. V0 through V0.4 are available as frozen intermediate states through the version menu in the header. The map is bilingual — use the DE/EN toggle in the header.
+The interactive map lives in [`quo-vadimus.html`](./quo-vadimus.html) — open it in a browser, click a node or an edge to see the mechanism. State **V0.4**: 53 nodes, 123 signed edges, structurally checked (no dead ends, no dangling references); 32 edges carry source citations. V0, V0.1 and V0.2 are available as frozen intermediate states through the version menu in the header. The map is bilingual — use the DE/EN toggle in the header.
 
 ## The system in five sentences
 
@@ -75,14 +75,6 @@ The map named the stage of power politics (`G` = "China/Taiwan…", `ORD` = powe
 **`CHOKE` — resource/supply-chain chokepoints (rare earths).** The **geopolitical analogue of `FIN`**: a throttle on the bright surplus engine. `CHOKE→AUT−` (automation/energy transition hang on magnets/chips a rival licenses → brakes the engine at the root), `CHOKE→T3−` (leverage over rules → coordination impossible), `CHOKE→ORD+` (demonstrated coercion entrenches the power order) and the counter-fork `CHOKE→BLOC+ (contested)` (can ignite European strategic autonomy — CRMA). Evidenced: April 2025 — MOFCOM licensing on 7 rare earths + all magnets (plus gallium/germanium/graphite); China's leverage sits in *processing*; US magnets not until 2027–28 → maximum leverage window.
 
 Both hang on `G` and close no new cycle — the loop census stays **179 (148 reinforcing, 31 balancing)**. Deliberately kept separate (price/trade weapon vs. supply weapon), as the map also separates `S2`/`LK`/`MPWR`.
-
-## V0.5 — digital fragility (offense-dominance)
-
-The map modeled AI so far as a labor force (`A→B`/`ENT`) and a surplus force (`A→AUT`), never as an *offensive* one. New in V0.5: **`CYBER` — digital fragility**, the fourth Janus face of `A` and the **third fragility engine** beside `FIN` (financial) and `CHOKE` (physical). The map-distinct claim none of the others carries: the entire bright surplus runs on a networked software substrate, and AI tips the offense-defense balance.
-
-Deliberately *tight* — four edges: `A→CYBER+ (contested)` (AI drastically lowers the cost of offense — but also drives defense; the net sign is the crux), `CYBER→SEC−` (attackable infrastructure lowers perceived security — engine signature), `CYBER→GROW−` ('flash attacks' destroy capital, like `ECO`/`FIN→GROW`) and `CYBER→AUT−` (offense-dominance discounts the automation stack — digital twin of `CHOKE→AUT`). *Not* wired, to avoid dilution: the state weapon (carried by `G`/`ORD`/`CHOKE`), disinformation/deepfakes (a different mechanism, possibly its own node via `TRUST`), the financial cascade (carried by `FIN`).
-
-Evidenced, not hype: Claude Mythos Preview (Anthropic, 7 Apr 2026) — thousands of zero-days (271 in Firefox, 181 with exploits), an autonomously cracked 17-year FreeBSD flaw, withheld because too powerful; General Rudd: NSA classified systems in an authorized red-team 'in hours, not weeks' (11 Jun 2026). The offense-defense balance is *contested* per CNAS — hence `A→CYBER` carries the sign risk and is a first-rate "which link don't you believe?" candidate. `CYBER` hangs on `A` and closes no new cycle — the census stays **179 (148 reinforcing, 31 balancing)**.
 
 ## Which link don't you believe?
 

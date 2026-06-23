@@ -4,7 +4,7 @@
 
 Ein Zukunftsszenario, gebaut als **Wirksystem**: kein Vibe, keine Prophezeiung, sondern ein gerichteter Kausalgraph, dem man an einer bestimmten Stelle widersprechen kann. Jede Wirkbeziehung trägt einen benannten Mechanismus („weil…"), eine Konfidenz (belegt / plausibel / umstritten) und ein **Vorzeichen** (+ gleichgerichtet / − gegengerichtet).
 
-Die interaktive Karte liegt in [`quo-vadimus.html`](./quo-vadimus.html) — im Browser öffnen, Knoten oder Kante anklicken, um den Mechanismus zu sehen. Stand **V0.5**: 54 Knoten, 127 signierte Kanten, strukturell geprüft (keine Sackgassen, keine offenen Referenzen); 33 Kanten tragen Quellen-Belege. V0 bis V0.4 sind über das Versionsmenü im Header als eingefrorene Zwischenstände erreichbar.
+Die interaktive Karte liegt in [`quo-vadimus.html`](./quo-vadimus.html) — im Browser öffnen, Knoten oder Kante anklicken, um den Mechanismus zu sehen. Stand **V0.4**: 53 Knoten, 123 signierte Kanten, strukturell geprüft (keine Sackgassen, keine offenen Referenzen); 32 Kanten tragen Quellen-Belege. V0, V0.1 und V0.2 sind über das Versionsmenü im Header als eingefrorene Zwischenstände erreichbar.
 
 ## Das System in fünf Sätzen
 
@@ -75,14 +75,6 @@ Die Karte nannte die Bühne der Machtpolitik (`G` = „China/Taiwan…", `ORD` =
 **`CHOKE` — Ressourcen-/Lieferketten-Chokepoints (seltene Erden).** Das **geopolitische Analogon zu `FIN`**: eine Drossel am hellen Überschuss-Motor. `CHOKE→AUT−` (Automation/Energiewende hängen an Magneten/Chips, die ein Rivale lizenziert → bremst den Motor an der Wurzel), `CHOKE→T3−` (Hebel statt Regeln → Koordination unmöglich), `CHOKE→ORD+` (demonstrierter Zwang verfestigt die Machtordnung) und der Gegen-Fork `CHOKE→BLOC+ (umstritten)` (kann europäische strategische Autonomie zünden — CRMA). Belegt: April 2025 — MOFCOM-Lizenzen auf 7 SE + alle Magnete (plus Gallium/Germanium/Graphit); Chinas Hebel sitzt in der *Verarbeitung*; US-Magnete erst 2027–28 → maximales Hebelfenster.
 
 Beide hängen an `G` und schließen keinen neuen Zyklus — der Schleifen-Zensus bleibt **179 (148 verstärkend, 31 balancierend)**. Bewusst getrennt gehalten (Preis-/Handelswaffe vs. Liefer-Waffe), wie die Karte auch `S2`/`LK`/`MPWR` trennt.
-
-## V0.5 — digitale Fragilität (Offense-Dominanz)
-
-Die Karte modellierte KI bisher als Arbeits- (`A→B`/`ENT`) und Überschuss-Kraft (`A→AUT`), nie als *offensive*. Neu in V0.5: **`CYBER` — digitale Fragilität**, die vierte Janus-Fläche von `A` und der **dritte Fragilitäts-Motor** neben `FIN` (finanziell) und `CHOKE` (physisch). Die map-distinkte Aussage, die keiner der anderen trägt: der gesamte helle Überschuss läuft auf einem vernetzten Software-Untergrund, und KI kippt die Offense-Defense-Balance.
-
-Bewusst *eng* geschnitten — vier Kanten: `A→CYBER+ (umstritten)` (KI senkt die Kosten der Offensive drastisch — aber treibt zugleich die Defensive; das Netto-Vorzeichen ist der Knackpunkt), `CYBER→SEC−` (angreifbare Infrastruktur senkt die wahrgenommene Sicherheit — Motor-Signatur), `CYBER→GROW−` („Flash-Attacks" zerstören Kapital, wie `ECO`/`FIN→GROW`) und `CYBER→AUT−` (Offense-Dominanz diskontiert den Automations-Stack — digitaler Zwilling von `CHOKE→AUT`). *Nicht* verkabelt, um nicht zu verwässern: die Staatenwaffe (trägt `G`/`ORD`/`CHOKE`), Desinformation/Deepfakes (anderer Mechanismus, ggf. eigener Knoten über `TRUST`), die Finanz-Kaskade (trägt `FIN`).
-
-Belegt, nicht Hype: Claude Mythos Preview (Anthropic, 7.4.2026) — tausende Zero-Days (271 in Firefox, 181 mit Exploit), autonom geknackte 17-Jahre-FreeBSD-Lücke, zurückgehalten weil zu mächtig; General Rudd: NSA-Classified-Systeme im autorisierten Red-Team „in Stunden, nicht Wochen" (11.6.2026). Die Offense-Defense-Balance ist laut CNAS *umstritten* — deshalb trägt `A→CYBER` das Vorzeichen-Risiko und ist ein erstklassiger „an welchem Link glaubst du nicht?"-Kandidat. `CYBER` hängt an `A` und schließt keinen neuen Zyklus — Zensus bleibt **179 (148 verstärkend, 31 balancierend)**.
 
 ## An welchem Link glaubst du nicht?
 

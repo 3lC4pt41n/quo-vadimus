@@ -4,7 +4,7 @@
 
 A scenario of the future, built as a **system of effects**: not a vibe, not a prophecy, but a directed causal graph you can disagree with at a specific point. Every causal link carries a named mechanism ("because…"), a confidence (evidenced / plausible / contested), and a **sign** (+ same-direction / − opposite-direction).
 
-The interactive map lives in [`quo-vadimus.html`](./quo-vadimus.html) — open it in a browser, click a node or an edge to see the mechanism. State **V0.5**: 54 nodes, 127 signed edges, structurally checked (no dead ends, no dangling references); 33 edges carry source citations. V0 through V0.4 are available as frozen intermediate states through the version menu in the header. The map is bilingual — use the DE/EN toggle in the header.
+The interactive map lives in [`quo-vadimus.html`](./quo-vadimus.html) — open it in a browser, click a node or an edge to see the mechanism. State **V0.3**: 51 nodes, 113 signed edges, structurally checked (no dead ends, no dangling references); 27 edges carry source citations. The frozen original remains reachable as [V0](./versions/v0/quo-vadimus.html) (git tag `v0`). The map is bilingual — use the DE/EN toggle in the header.
 
 ## The system in five sentences
 
@@ -65,24 +65,6 @@ The map modeled the AI shock as a *stock* problem so far: `B` displaces the esta
 The lever is the **ladder break**: AI automates exactly the junior rung by which one used to climb to the scarce oversight roles (`Au`). `ENT` thus attacks *two bright paths* — the `Au` pipeline dries up, and reskilling (`EDU`/`ADL`) fizzles without an on-ramp ("the learning curve is being automated"). Five edges: `A→ENT+` (junior tasks are the most codifiable → automated first), `ENT→C+` (blocked entry → youth precarization, a distinct flow channel), `ENT→SOZ+` (fills the "hopelessness" with a cause and a cohort), `ENT→Au−` (the ladder break) and `VAC→ENT−` (*contested*: labor scarcity *can* keep the rung open, but so far automation wins — "need the job to get the job"). `ENT` thus sharpens the `VAC` paradox: scarcity of the experienced alongside a surplus of the locked-out.
 
 Evidenced: Dallas Fed (22–25-year-olds in AI-exposed occupations −13% since 2022), US entry-level postings −35% since 1/2023 (Revelio), UK tech graduate roles −46% (2024), graduate unemployment 9.7% (9/2025). *Contested* is the severity (class of 2026 projected +5.6%); "30% graduate unemployment" is speculative, not wired. `ENT` is upstream and closes no new cycle — the loop census stays **179 (148 reinforcing, 31 balancing)**.
-
-## V0.4 — a rival's economic statecraft
-
-The map named the stage of power politics (`G` = "China/Taiwan…", `ORD` = power-based order, `SYS` = autocracy, `RES` = arms/prestige) but not the *economic weapons*. The lock `LK` was driven only *internally* (`S2`); an external subsidized rival was missing entirely, and the original **Autor China shock** (import competition → local job collapse) was wired nowhere — `MPWR` cites Autor only for *markups*, not the trade shock. New in V0.4: two nodes.
-
-**`MERC` — subsidy & yuan undervaluation (China shock 2.0).** The external driver of `LK` *and* `C`: `MERC→LK+` (against a subsidized rival no go-it-alone matches → the lock bites harder), `MERC→C+` (deindustrialization of tradable sectors → precarization), `MERC→E+` (protectionist backlash → renationalization). Plus a **leak** like `AUT→SEC`: `MERC→SEC+ (contested)` — cheap subsidized goods raise the consumption floor *while* they destroy jobs. Evidenced: yuan 8.5% (IMF 7/2025) to 18–25% (IMF update/Goldman) undervalued; China 30% of world manufacturing at 13% of consumption; OECD — steel subsidization 5× any other; "China shock 2.0" already EU policy (overcapacity instrument).
-
-**`CHOKE` — resource/supply-chain chokepoints (rare earths).** The **geopolitical analogue of `FIN`**: a throttle on the bright surplus engine. `CHOKE→AUT−` (automation/energy transition hang on magnets/chips a rival licenses → brakes the engine at the root), `CHOKE→T3−` (leverage over rules → coordination impossible), `CHOKE→ORD+` (demonstrated coercion entrenches the power order) and the counter-fork `CHOKE→BLOC+ (contested)` (can ignite European strategic autonomy — CRMA). Evidenced: April 2025 — MOFCOM licensing on 7 rare earths + all magnets (plus gallium/germanium/graphite); China's leverage sits in *processing*; US magnets not until 2027–28 → maximum leverage window.
-
-Both hang on `G` and close no new cycle — the loop census stays **179 (148 reinforcing, 31 balancing)**. Deliberately kept separate (price/trade weapon vs. supply weapon), as the map also separates `S2`/`LK`/`MPWR`.
-
-## V0.5 — digital fragility (offense-dominance)
-
-The map modeled AI so far as a labor force (`A→B`/`ENT`) and a surplus force (`A→AUT`), never as an *offensive* one. New in V0.5: **`CYBER` — digital fragility**, the fourth Janus face of `A` and the **third fragility engine** beside `FIN` (financial) and `CHOKE` (physical). The map-distinct claim none of the others carries: the entire bright surplus runs on a networked software substrate, and AI tips the offense-defense balance.
-
-Deliberately *tight* — four edges: `A→CYBER+ (contested)` (AI drastically lowers the cost of offense — but also drives defense; the net sign is the crux), `CYBER→SEC−` (attackable infrastructure lowers perceived security — engine signature), `CYBER→GROW−` ('flash attacks' destroy capital, like `ECO`/`FIN→GROW`) and `CYBER→AUT−` (offense-dominance discounts the automation stack — digital twin of `CHOKE→AUT`). *Not* wired, to avoid dilution: the state weapon (carried by `G`/`ORD`/`CHOKE`), disinformation/deepfakes (a different mechanism, possibly its own node via `TRUST`), the financial cascade (carried by `FIN`).
-
-Evidenced, not hype: Claude Mythos Preview (Anthropic, 7 Apr 2026) — thousands of zero-days (271 in Firefox, 181 with exploits), an autonomously cracked 17-year FreeBSD flaw, withheld because too powerful; General Rudd: NSA classified systems in an authorized red-team 'in hours, not weeks' (11 Jun 2026). The offense-defense balance is *contested* per CNAS — hence `A→CYBER` carries the sign risk and is a first-rate "which link don't you believe?" candidate. `CYBER` hangs on `A` and closes no new cycle — the census stays **179 (148 reinforcing, 31 balancing)**.
 
 ## Which link don't you believe?
 
