@@ -64,13 +64,25 @@
   .row{padding:10px 0;border-top:1px solid var(--line)}
   .row .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
   .mech{font-style:italic}
-  .legend{position:absolute;left:14px;bottom:14px;background:rgba(23,26,33,.92);
-    border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--muted);max-width:250px}
+  .panelShell{position:absolute;background:rgba(23,26,33,.94);border:1px solid var(--line);
+    border-radius:10px;color:var(--muted);font-size:11px;z-index:2;overflow:hidden;
+    box-shadow:0 10px 30px rgba(0,0,0,.22)}
+  .panelHead{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
+    background:rgba(29,34,44,.95);border:0;color:var(--ink);padding:9px 11px;
+    font-size:12px;font-weight:750;cursor:pointer;text-align:left}
+  .panelHead:hover{background:#2a3140}
+  .panelTitle{display:flex;align-items:center;gap:7px}
+  .panelBadge{color:var(--muted);font-size:10.5px;font-weight:650;margin-left:auto}
+  .panelChevron{color:var(--muted);font-size:14px;line-height:1}
+  .panelBody{padding:10px 12px;border-top:1px solid var(--line);max-height:min(58vh,500px);overflow:auto}
+  .panelShell.collapsed{box-shadow:none}
+  .panelShell.collapsed .panelBody{display:none}
+  .legend{left:14px;bottom:14px;width:250px;max-width:250px}
   .legend b{color:var(--ink);font-weight:600}
   .legend .li{display:flex;align-items:center;gap:7px;margin:3px 0}
-	  .filterPanel{position:absolute;left:282px;bottom:14px;background:rgba(23,26,33,.92);
-	    border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--muted);
-	    max-width:min(520px,calc(100% - 296px))}
+	  .analysisPanel{left:282px;bottom:14px;width:360px;max-width:min(360px,calc(100% - 310px))}
+	  .filterPanel{left:656px;bottom:14px;width:430px;max-width:min(430px,calc(100% - 670px))}
+	  .analysisPanel b,
 	  .filterPanel b{color:var(--ink);font-weight:600}
 	  .filterPanel .fg{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0 8px}
 	  .loopControl{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}
@@ -112,9 +124,11 @@
   .filterPanel label{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);
     border-radius:6px;padding:3px 6px;background:#1d222c;cursor:pointer;white-space:nowrap}
   .filterPanel input{margin:0;accent-color:#7fb3ff}
-  .filterPanel button{background:#222732;color:var(--ink);border:1px solid var(--line);
+  .panelShell button:not(.panelHead){background:#222732;color:var(--ink);border:1px solid var(--line);
     border-radius:6px;padding:3px 8px;font-size:11px;font-weight:650;cursor:pointer}
-  .filterPanel button:hover{background:#2a3140}
+  .panelShell button:not(.panelHead):hover{background:#2a3140}
+  .analysisPanel .routeBtn:hover,.analysisPanel .routeBtn.active{background:#2a3140;border-color:var(--route-color);
+    box-shadow:inset 0 0 0 1px var(--route-color)}
   .nodeBox.filteredOut:not(.dim){opacity:.24}
   .mapTools{position:absolute;right:14px;top:14px;background:rgba(23,26,33,.92);
     border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;gap:6px;align-items:center;
@@ -131,7 +145,9 @@
   .miniNode{fill:#3a414e;opacity:.75}
   .miniNode.hot{fill:#e8eaed;opacity:1}
   .miniView{fill:rgba(127,179,255,.12);stroke:#7fb3ff;stroke-width:2}
-  @media (max-width:1000px){.filterPanel{left:14px;top:14px;bottom:auto;max-width:calc(100% - 28px);max-height:45%;overflow:auto}}
+  @media (max-width:1000px){.legend,.analysisPanel,.filterPanel{left:14px;right:14px;width:auto;max-width:none;bottom:auto}
+    .legend{top:14px}.analysisPanel{top:62px}.filterPanel{top:110px}
+    .panelShell:not(.collapsed){z-index:4}.panelShell.collapsed{z-index:5}.panelBody{max-height:38vh}}
   @media (max-width:1000px){.mapTools{right:14px;bottom:14px;top:auto;max-width:calc(100% - 28px)}
     .mapTools input{width:150px}.minimap{right:14px;bottom:64px;top:auto;width:150px;height:98px}}
   .sw{width:22px;height:0;border-top-width:3px;border-top-style:solid;display:inline-block}
@@ -159,8 +175,9 @@
     <svg id="svg"></svg>
     <div class="mapTools" id="mapTools"></div>
     <div class="minimap"><svg id="minimapSvg"></svg></div>
-    <div class="legend" id="legend"></div>
-    <div class="filterPanel" id="filters"></div>
+    <div class="legend panelShell" id="legend"></div>
+    <div class="analysisPanel panelShell" id="analysis"></div>
+    <div class="filterPanel panelShell" id="filters"></div>
   </div>
   <div id="side">
     <h2 id="detailHead">Detail</h2>
@@ -482,6 +499,10 @@ const NAVTXT={
   de:{search:"Knoten suchen", reset:"Ansicht zurücksetzen", jump:"Springen", noMatch:"Kein Treffer"},
   en:{search:"Search node", reset:"Reset view", jump:"Jump", noMatch:"No match"}
 };
+const PANELTXT={
+  de:{legend:"Legende",analysis:"Analyse",filters:"Filter",active:"aktiv",open:"öffnen",close:"schließen"},
+  en:{legend:"Legend",analysis:"Analysis",filters:"Filters",active:"active",open:"open",close:"close"}
+};
 const A11YTXT={
   de:{map:"Interaktive Wirksystem-Karte", node:"Knoten", edge:"Kante", to:"nach", sign:"Vorzeichen",
       open:"Enter öffnet Detail", version:"Version auswählen", language:"Sprache wechseln"},
@@ -513,7 +534,9 @@ const CONF_FILTERS=["belegt","plausibel","umstritten","spekulativ"];
 const POL_FILTERS=["+","-"];
 const CHAIN_FILTERS=[...new Set(Object.values(NODES).map(n=>n.chain).filter(c=>c!==undefined))].sort((a,b)=>a-b).map(String);
 const FILTER_KEY="quo-vadimus-filter-v1";
+const PANEL_KEY="quo-vadimus-panels-v1";
 function defaultFilter(){return {conf:new Set(CONF_FILTERS),chain:new Set(CHAIN_FILTERS),pol:new Set(POL_FILTERS)};}
+function defaultPanels(){return {legend:false,analysis:false,filters:false};}
 function normalizeFilter(raw){
   const f=defaultFilter();
   if(!raw) return f;
@@ -529,6 +552,39 @@ function loadFilter(){
   catch{return defaultFilter();}
 }
 let filter=loadFilter();
+let panels=loadPanels();
+function normalizePanels(raw){
+  const base=defaultPanels();
+  if(!raw||typeof raw!=="object") return base;
+  Object.keys(base).forEach(key=>{base[key]=!!raw[key];});
+  return base;
+}
+function loadPanels(){
+  try{return normalizePanels(JSON.parse(localStorage.getItem(PANEL_KEY)||"null"));}
+  catch{return defaultPanels();}
+}
+function savePanels(){
+  try{localStorage.setItem(PANEL_KEY,JSON.stringify(panels));}catch{}
+}
+function togglePanel(name){
+  const next=!panels[name];
+  panels=defaultPanels();
+  panels[name]=next;
+  savePanels();
+  renderPanels();
+}
+function panelButtonLabel(name,expanded){
+  const P=PANELTXT[LANG];
+  return `${P[name]} ${expanded?P.close:P.open}`;
+}
+function panelHTML(name,title,body,{badge=""}={}){
+  const expanded=!!panels[name], controls=`${name}PanelBody`;
+  return `<button type="button" class="panelHead" aria-expanded="${expanded}" aria-controls="${controls}"
+      aria-label="${escAttr(panelButtonLabel(name,expanded))}" onclick="togglePanel('${name}');event.stopPropagation()">
+      <span class="panelTitle">${title}</span>${badge?` <span class="panelBadge">${badge}</span>`:""}
+      <span class="panelChevron">${expanded?"−":"+"}</span></button>
+    <div class="panelBody" id="${controls}" ${expanded?"":"hidden"}>${body}</div>`;
+}
 function legendHTML(){
   const L=LANG==='de'
    ?{conf:"Konfidenz (Kantenfarbe)",b:"belegt",p:"plausibel",u:"umstritten",
@@ -572,6 +628,12 @@ function saveFilter(){
 }
 function filterActive(){
   return filter.conf.size!==CONF_FILTERS.length||filter.chain.size!==CHAIN_FILTERS.length||filter.pol.size!==POL_FILTERS.length;
+}
+function activeFilterCount(){
+  return (CONF_FILTERS.length-filter.conf.size)+(CHAIN_FILTERS.length-filter.chain.size)+(POL_FILTERS.length-filter.pol.size);
+}
+function activeAnalysisCount(){
+  return (activeLoopId?1:0)+(activeRouteId?1:0)+(activeTrace?1:0)+(activeSim?1:0);
 }
 function filterChip(group,value,label,extraStyle=""){
   const checked=filter[group].has(String(value))?"checked":"";
@@ -622,20 +684,45 @@ function traceActionsHTML(id){
     <div class="traceSummary" id="traceSummary" hidden></div>`;
 }
 function renderFilters(){
-  const F=FILTERTXT[LANG], C=CONFLABEL[LANG], T=LOOPTXT[LANG], R=ROUTETXT[LANG];
+  const F=FILTERTXT[LANG], C=CONFLABEL[LANG];
   const confs=CONF_FILTERS.map(c=>filterChip("conf",c,C[c],`border-color:${CONFHEX[c]}66`)).join("");
   const pols=POL_FILTERS.map(p=>filterChip("pol",p,p==="+"?F.plus:F.minus)).join("");
   const chains=CHAIN_FILTERS.map(c=>filterChip("chain",c,CHAINLABEL[LANG][c]||`#${c}`)).join("");
-  document.getElementById("filters").innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
+  const badge=activeFilterCount()?`${activeFilterCount()} ${PANELTXT[LANG].active}`:"";
+  const body=`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
     <b>${F.title}</b><button type="button" onclick="resetFilters()">${F.reset}</button></div>
-    ${simControlHTML()}
-    <div class="routeControl"><b>${R.choose}</b><div class="routeButtons">${routeButtonsHTML()}</div></div>
-    <div class="loopControl"><b>${T.choose}</b><select id="loopSelect" aria-label="${escAttr(T.choose)}" onchange="selectLoop(this.value)">${loopOptionsHTML()}</select>
-      <div class="loopKey"><span><span class="loopDot" style="background:${LOOP_COLOR.reinforcing}"></span> ${T.reinforcing}</span>
-      <span><span class="loopDot" style="background:${LOOP_COLOR.balancing}"></span> ${T.balancing}</span></div></div>
     <div><b>${F.conf}</b><div class="fg">${confs}</div></div>
     <div><b>${F.pol}</b><div class="fg">${pols}</div></div>
     <div><b>${F.chain}</b><div class="fg">${chains}</div></div>`;
+  const el=document.getElementById("filters");
+  el.classList.toggle("collapsed",!panels.filters);
+  el.innerHTML=panelHTML("filters",PANELTXT[LANG].filters,body,{badge});
+}
+function renderAnalysis(){
+  const T=LOOPTXT[LANG], R=ROUTETXT[LANG];
+  const badge=activeAnalysisCount()?`${activeAnalysisCount()} ${PANELTXT[LANG].active}`:"";
+  const body=`${simControlHTML()}
+    <div class="routeControl"><b>${R.choose}</b><div class="routeButtons">${routeButtonsHTML()}</div></div>
+    <div class="loopControl"><b>${T.choose}</b><select id="loopSelect" aria-label="${escAttr(T.choose)}" onchange="selectLoop(this.value)">${loopOptionsHTML()}</select>
+      <div class="loopKey"><span><span class="loopDot" style="background:${LOOP_COLOR.reinforcing}"></span> ${T.reinforcing}</span>
+      <span><span class="loopDot" style="background:${LOOP_COLOR.balancing}"></span> ${T.balancing}</span></div></div>`;
+  const el=document.getElementById("analysis");
+  el.classList.toggle("collapsed",!panels.analysis);
+  el.innerHTML=panelHTML("analysis",PANELTXT[LANG].analysis,body,{badge});
+}
+function renderLegendPanel(){
+  const el=document.getElementById("legend");
+  el.classList.toggle("collapsed",!panels.legend);
+  el.innerHTML=panelHTML("legend",PANELTXT[LANG].legend,legendHTML());
+}
+function renderPanels(){
+  renderLegendPanel();
+  renderAnalysis();
+  renderFilters();
+  syncLoopSelect();
+  syncRouteButtons();
+  syncTraceButtons();
+  syncDistSimControl();
 }
 function escAttr(s){
   return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
@@ -902,6 +989,7 @@ function selectLoop(id){
   syncRouteButtons();
   syncTraceButtons();
   syncDistSimControl();
+  renderAnalysis();
   document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint,#stage .routeStep").forEach(node=>node.classList.remove("dim","hot","loopTint","routeStep"));
   if(!id){clearDetail();return;}
   const loop=LOOPS.find(l=>l.id===id);
@@ -922,6 +1010,7 @@ function selectRoute(id){
   syncRouteButtons();
   syncTraceButtons();
   syncDistSimControl();
+  renderAnalysis();
   document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint,#stage .routeStep").forEach(node=>node.classList.remove("dim","hot","loopTint","routeStep"));
   if(!id){clearDetail();return;}
   const route=ROUTES.find(r=>r.id===id);
@@ -945,6 +1034,7 @@ function traceFrom(id,direction){
   syncRouteButtons();
   syncTraceButtons();
   syncDistSimControl();
+  renderAnalysis();
   const result=traceSets(id,direction);
   highlight(result);
   applyFilters();
@@ -965,13 +1055,13 @@ function setDistSim(mode){
   syncRouteButtons();
   syncTraceButtons();
   if(!distSimMode){
-    renderFilters();
+    renderAnalysis();
     applyFilters();
     clearDetail();
     return;
   }
   activeSim=distSimResult(distSimMode);
-  renderFilters();
+  renderAnalysis();
   highlight({nodes:activeSim.nodes,edges:activeSim.edges});
   applyDistSimClasses(activeSim);
   applyFilters();
@@ -1010,7 +1100,9 @@ function activateByKey(ev,action){
 
 const svg=document.getElementById("svg");
 const stage=document.getElementById("stage");
+const legendEl=document.getElementById("legend");
 const filtersEl=document.getElementById("filters");
+const analysisEl=document.getElementById("analysis");
 const mapToolsEl=document.getElementById("mapTools");
 const minimapSvg=document.getElementById("minimapSvg");
 const NW=200, NH=72;
@@ -1071,7 +1163,7 @@ function clearHighlight(){
   document.documentElement.style.removeProperty("--focus-glow");
   document.documentElement.style.removeProperty("--loop-tint");
   document.querySelectorAll("#stage .dim,#stage .hot,#stage .loopTint,#stage .routeStep").forEach(node=>node.classList.remove("dim","hot","loopTint","routeStep"));
-  syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); syncDistSimControl(); applyFilters();
+  syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); syncDistSimControl(); renderAnalysis(); applyFilters();
 }
 function highlight({nodes=new Set(),edges=new Set(),tint=null}={}){
   const hasFocus=nodes.size>0||edges.size>0;
@@ -1096,7 +1188,7 @@ function highlight({nodes=new Set(),edges=new Set(),tint=null}={}){
   updateMinimap();
 }
 function focusNode(id){
-  activeLoopId=""; activeRouteId=""; activeTrace=null; distSimMode=0; activeSim=null; clearRouteSequence(); clearDistSimClasses(); syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); syncDistSimControl(); applyFilters();
+  activeLoopId=""; activeRouteId=""; activeTrace=null; distSimMode=0; activeSim=null; clearRouteSequence(); clearDistSimClasses(); syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); syncDistSimControl(); renderAnalysis(); applyFilters();
   focusId=id; focusEdgeId=null;
   const nodes=new Set([id]), edges=new Set();
   EDGES.forEach((edge,i)=>{
@@ -1113,7 +1205,7 @@ function edgeIndex(edge){
     (candidate.f===edge.f&&candidate.t===edge.t&&candidate.mech===edge.mech&&candidate.pol===edge.pol));
 }
 function focusEdge(edge,ei=edgeIndex(edge)){
-  activeLoopId=""; activeRouteId=""; activeTrace=null; distSimMode=0; activeSim=null; clearRouteSequence(); clearDistSimClasses(); syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); syncDistSimControl(); applyFilters();
+  activeLoopId=""; activeRouteId=""; activeTrace=null; distSimMode=0; activeSim=null; clearRouteSequence(); clearDistSimClasses(); syncLoopSelect(); syncRouteButtons(); syncTraceButtons(); syncDistSimControl(); renderAnalysis(); applyFilters();
   focusId=null; focusEdgeId=ei;
   const nodes=new Set([edge.f,edge.t]), edges=new Set();
   if(ei>-1) edges.add(ei);
@@ -1320,11 +1412,10 @@ function render(){
   svg.setAttribute("aria-label",A11YTXT[LANG].map);
   document.getElementById("subtitle").innerHTML=UI[LANG].sub;
   document.getElementById("detailHead").textContent=UI[LANG].detail;
-  document.getElementById("legend").innerHTML=legendHTML();
   document.getElementById("langbtn").textContent=LANG==="de"?"EN":"DE";
   document.getElementById("langbtn").setAttribute("aria-label",A11YTXT[LANG].language);
   document.querySelector(".vselect").setAttribute("aria-label",A11YTXT[LANG].version);
-  renderMapTools(); renderFilters(); drawEdges(); drawNodes(); renderMinimap(); applyFilters(); clearDetail();
+  renderMapTools(); renderPanels(); drawEdges(); drawNodes(); renderMinimap(); applyFilters(); clearDetail();
 }
 function toggleLang(){LANG=LANG==="de"?"en":"de";render();}
 
@@ -1334,9 +1425,15 @@ function apply(){
   updateMinimap();
 }
 let drag=null;
+legendEl.addEventListener("click",e=>e.stopPropagation());
+legendEl.addEventListener("mousedown",e=>e.stopPropagation());
+legendEl.addEventListener("wheel",e=>e.stopPropagation(),{passive:true});
 filtersEl.addEventListener("click",e=>e.stopPropagation());
 filtersEl.addEventListener("mousedown",e=>e.stopPropagation());
 filtersEl.addEventListener("wheel",e=>e.stopPropagation(),{passive:true});
+analysisEl.addEventListener("click",e=>e.stopPropagation());
+analysisEl.addEventListener("mousedown",e=>e.stopPropagation());
+analysisEl.addEventListener("wheel",e=>e.stopPropagation(),{passive:true});
 mapToolsEl.addEventListener("click",e=>e.stopPropagation());
 mapToolsEl.addEventListener("mousedown",e=>e.stopPropagation());
 mapToolsEl.addEventListener("wheel",e=>e.stopPropagation(),{passive:true});
